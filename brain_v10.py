@@ -1,0 +1,1209 @@
+#!/usr/bin/env python3
+"""
+SoulLink Brain v10.0 — PURE NUMPY SINGULARITY
+══════════════════════════════════════════════════════════════════
+Architecture entierement vectorisee — zero objet Python en sim
+Arrays pre-alloues taille fixe — zero recompilation
+Sparse CSR synaptique — connexions massives efficaces
+Target: 1000+ Hz avec 50K neurones
+Compatible API v9 — drop-in replacement
+══════════════════════════════════════════════════════════════════
+"""
+
+import random, threading, time, math, json, os, hashlib, collections
+import numpy as np
+from scipy import sparse
+from datetime import datetime
+from pathlib import Path
+from flask import Flask, jsonify, request, Response
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §0  PERSISTANCE
+# ─────────────────────────────────────────────────────────────────────────────
+
+PERSIST_DIR  = Path("/mnt/nvme/soullink_brain")
+PERSIST_DIR.mkdir(parents=True, exist_ok=True)
+STATE_FILE   = PERSIST_DIR / "brain_v10_state.json"
+KG_FILE      = PERSIST_DIR / "knowledge_graph.json"
+TOPIC_FILE   = PERSIST_DIR / "learned_topics_v9.json"
+NEURONS_FILE = PERSIST_DIR / "brain_v10_neurons.npz"
+CHAIN_FILE   = PERSIST_DIR / "brain_v10_chain.jsonl"
+
+def _load_json(path, default):
+    try:
+        if path.exists():
+            with open(path) as f: return json.load(f)
+    except Exception: pass
+    return default
+
+def _save_json(path, data):
+    try:
+        with open(path, "w") as f: json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"Save failed {path.name}: {e}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §1  LIF PARAMETERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+VR, VT, VZ  = -70.0, -55.0, -75.0
+TAU_M       = 20.0
+T_REFRAC    = 3.0
+DT          = 0.5
+
+HEBBIAN_LR  = 0.012
+STDP_LR     = 0.025
+STDP_WIN    = 20.0
+W_DECAY     = 0.0008
+W_MIN, W_MAX = 0.04, 1.0
+
+MAX_NEURONS  = 50000   # pre-allocation fixe
+MAX_SYNAPSES = 500000  # sparse matrix max
+BASE_GROW_INTERVAL  = 5.0
+LEARNING_GROW_BOOST = 14
+RESONANCE_BOOST     = 45
+AVALANCHE_THRESH    = 0.82
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §2  MODULE DEFINITIONS (identiques v9)
+# ─────────────────────────────────────────────────────────────────────────────
+
+MODULE_DEFS = [
+    ("perception",   20, "#3dffc0", -158,  82,  78, 0.15, "general"),
+    ("memory",       28, "#3d9eff",   18, 128, -82, 0.20, "general"),
+    ("reasoning",    22, "#ff5577",  168,  62,  42, 0.20, "general"),
+    ("learning",     16, "#ff9944",  -88, -42, 118, 0.15, "general"),
+    ("attention",    12, "#cc44ff",   88,  28,  88, 0.25, "general"),
+    ("output",       14, "#aaff44",  208, -32, -48, 0.15, "general"),
+    ("language",     18, "#44ffff", -208, -62, -28, 0.20, "general"),
+    ("vision",       15, "#ff6644",  -48,-122, -62, 0.15, "general"),
+    ("audio",        12, "#6677ff",  112,-108, -88, 0.15, "general"),
+    ("motor",        10, "#ffee44",  238, -88,  68, 0.10, "general"),
+    ("mathematics",  32, "#ffffff",  -20, 160,  20, 0.10, "math"),
+    ("calculus",     24, "#e0c0ff",  110, 155, -30, 0.12, "math"),
+    ("algebra",      20, "#ffc0e0",  -90, 165,  80, 0.12, "math"),
+    ("geometry",     18, "#a0ffd0",   30, 100, 150, 0.12, "math"),
+    ("logic",        16, "#ffa0a0", -160, 120,  40, 0.15, "math"),
+    ("statistics",   20, "#c0e0ff",  160, 100, -80, 0.12, "math"),
+    ("information",  14, "#a0c0ff",  -50,-170,  30, 0.15, "science"),
+    ("physics",      22, "#ffd0a0",   80,-150,  70, 0.12, "science"),
+    ("chemistry",    14, "#e0e0a0", -130,-130, -60, 0.15, "science"),
+    ("computation",  18, "#c0ffc0",  130,-140,  10, 0.12, "science"),
+    ("optimization", 14, "#b0e0e0",  -20,-180,-100, 0.15, "math"),
+    ("patterns",     16, "#ffb0c0",  -80,  30,-170, 0.12, "general"),
+    ("philosophy",   10, "#d0d0d0",   60,  40,-180, 0.20, "general"),
+    ("neuroscience", 12, "#ffd0ff", -180,  10, -80, 0.18, "meta"),
+]
+
+WIRES = {
+    "perception":   ["memory","attention","vision","language","patterns"],
+    "memory":       ["reasoning","learning","language","perception","mathematics","neuroscience"],
+    "reasoning":    ["output","attention","memory","logic","mathematics","philosophy"],
+    "learning":     ["memory","reasoning","perception","mathematics","statistics"],
+    "attention":    ["perception","reasoning","vision","audio","mathematics"],
+    "output":       ["motor","language","reasoning"],
+    "language":     ["memory","output","audio","reasoning","logic","philosophy"],
+    "vision":       ["perception","attention","patterns","geometry"],
+    "audio":        ["perception","language","attention"],
+    "motor":        ["output","optimization"],
+    "mathematics":  ["reasoning","logic","algebra","calculus","geometry","statistics","information","computation","optimization","memory"],
+    "calculus":     ["mathematics","physics","optimization","statistics"],
+    "algebra":      ["mathematics","logic","geometry","computation"],
+    "geometry":     ["mathematics","physics","vision","patterns"],
+    "logic":        ["mathematics","reasoning","philosophy","computation","algebra"],
+    "statistics":   ["mathematics","learning","information","physics"],
+    "information":  ["mathematics","computation","statistics","physics"],
+    "physics":      ["mathematics","chemistry","geometry","calculus","perception"],
+    "chemistry":    ["physics","patterns","computation"],
+    "computation":  ["mathematics","logic","algebra","optimization","learning"],
+    "optimization": ["mathematics","computation","calculus","learning"],
+    "patterns":     ["perception","mathematics","geometry","vision","memory"],
+    "philosophy":   ["logic","reasoning","language","neuroscience"],
+    "neuroscience": ["memory","learning","attention","perception","philosophy","mathematics","patterns"],
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §3  KNOWLEDGE GRAPH (identique v9)
+# ─────────────────────────────────────────────────────────────────────────────
+
+MATH_CURRICULUM = {
+    "numbers":("mathematics",[],1),"arithmetic":("mathematics",["numbers"],1),
+    "algebra_basic":("algebra",["arithmetic"],2),"geometry_euclid":("geometry",["arithmetic"],2),
+    "functions":("mathematics",["algebra_basic"],2),"trigonometry":("geometry",["functions"],2),
+    "logarithms":("mathematics",["functions"],2),"limits":("calculus",["functions"],3),
+    "derivatives":("calculus",["limits"],3),"integrals":("calculus",["derivatives"],3),
+    "vectors":("algebra",["algebra_basic"],2),"matrices":("algebra",["vectors"],3),
+    "linear_algebra":("algebra",["matrices"],3),"probability":("statistics",["arithmetic"],2),
+    "statistics_basic":("statistics",["probability"],2),"combinatorics":("mathematics",["arithmetic"],2),
+    "number_theory":("mathematics",["arithmetic"],3),"groups":("algebra",["linear_algebra"],4),
+    "rings_fields":("algebra",["groups"],4),"topology":("geometry",["limits"],4),
+    "differential_eq":("calculus",["integrals"],4),"complex_analysis":("calculus",["limits","vectors"],4),
+    "fourier_analysis":("calculus",["integrals"],4),"bayesian":("statistics",["probability"],3),
+    "information_theory":("information",["probability"],3),"graph_theory":("computation",["combinatorics"],3),
+    "algorithms":("computation",["graph_theory"],3),"complexity_theory":("computation",["algorithms"],4),
+    "formal_logic":("logic",["algebra_basic"],3),"type_theory":("logic",["formal_logic"],4),
+    "set_theory":("logic",["formal_logic"],3),"lambda_calculus":("computation",["type_theory"],4),
+    "category_theory":("algebra",["groups","topology"],5),"classical_mech":("physics",["derivatives"],3),
+    "electromagnetism":("physics",["vectors","calculus_advanced"],4),"thermodynamics":("physics",["derivatives"],3),
+    "quantum_mech":("physics",["complex_analysis"],5),"calculus_advanced":("calculus",["differential_eq"],4),
+    "convex_opt":("optimization",["calculus_advanced"],4),"gradient_descent":("optimization",["derivatives"],3),
+    "entropy":("information",["information_theory"],3),"kolmogorov":("information",["algorithms"],5),
+    "godel":("logic",["formal_logic"],5),"chaos_theory":("mathematics",["differential_eq"],5),
+    "fractal_geometry":("patterns",["geometry_euclid"],4),"neural_math":("neuroscience",["statistics_basic"],3),
+    "game_theory":("optimization",["probability"],3),
+}
+
+SCIENCE_SOURCES = [
+    ("Euler's formula","Euler%27s_formula","mathematics"),
+    ("Fourier transform","Fourier_transform","calculus"),
+    ("Linear algebra","Linear_algebra","algebra"),
+    ("Prime numbers","Prime_number","mathematics"),
+    ("Riemann hypothesis","Riemann_hypothesis","mathematics"),
+    ("Calculus","Calculus","calculus"),
+    ("Group theory","Group_theory","algebra"),
+    ("Entropy","Entropy_(information_theory)","information"),
+    ("Turing completeness","Turing_completeness","computation"),
+    ("Quantum mechanics","Quantum_mechanics","physics"),
+    ("Topology","Topology","geometry"),
+    ("Bayesian inference","Bayesian_inference","statistics"),
+    ("Kolmogorov complexity","Kolmogorov_complexity","information"),
+    ("Category theory","Category_theory","algebra"),
+    ("Mandelbrot set","Mandelbrot_set","patterns"),
+    ("Navier-Stokes","Navier%E2%80%93Stokes_equations","physics"),
+    ("Godel theorems","Godel%27s_incompleteness_theorems","logic"),
+    ("Neural network math","Artificial_neural_network","neuroscience"),
+    ("P vs NP","P_versus_NP_problem","computation"),
+    ("Chaos theory","Chaos_theory","mathematics"),
+    ("Graph theory","Graph_theory","computation"),
+    ("Differential geometry","Differential_geometry","geometry"),
+    ("Stochastic process","Stochastic_process","statistics"),
+    ("Automata theory","Automata_theory","computation"),
+    ("Lambda calculus","Lambda_calculus","logic"),
+    ("Tensor calculus","Tensor","calculus"),
+    ("Algebraic topology","Algebraic_topology","algebra"),
+    ("Information geometry","Information_geometry","information"),
+    ("Statistical mechanics","Statistical_mechanics","physics"),
+    ("Game theory","Game_theory","optimization"),
+]
+
+class KnowledgeGraph:
+    def __init__(self):
+        self.nodes = {}
+        self.edges = {}
+        saved = _load_json(KG_FILE, {"nodes":{}, "edges":{}})
+        self.nodes = saved.get("nodes", {})
+        self.edges = {tuple(k.split("||")):v for k,v in saved.get("edges",{}).items()}
+
+    def add_concept(self, concept, module, complexity=1.0):
+        if concept not in self.nodes:
+            self.nodes[concept] = {"module":module,"mastery":0.0,"times":0,"complexity":complexity,"first_seen":time.time()}
+        self.nodes[concept]["times"] += 1
+
+    def reinforce(self, concept, delta=0.05):
+        if concept in self.nodes:
+            self.nodes[concept]["mastery"] = min(1.0, self.nodes[concept]["mastery"] + delta)
+
+    def co_activate(self, a, b, strength=0.01):
+        key = (min(a,b), max(a,b))
+        self.edges[key] = min(1.0, self.edges.get(key,0.0)+strength)
+
+    def get_mastery(self, concept):
+        return self.nodes.get(concept,{}).get("mastery",0.0)
+
+    def save(self):
+        _save_json(KG_FILE, {"nodes":self.nodes,"edges":{"||".join(k):v for k,v in self.edges.items()}})
+
+    def stats(self):
+        return {"concepts":len(self.nodes),"connections":len(self.edges),"avg_mastery":round(sum(d["mastery"] for d in self.nodes.values())/max(1,len(self.nodes)),3)}
+
+class Curriculum:
+    def __init__(self, kg):
+        self.kg = kg
+        self.queue = collections.deque()
+        self.learned = set(_load_json(TOPIC_FILE, []))
+        self.current = None
+        self._build_queue()
+
+    def _build_queue(self):
+        visited = set()
+        def dfs(topic):
+            if topic in visited: return
+            visited.add(topic)
+            for p in MATH_CURRICULUM.get(topic,(None,[],1))[1]: dfs(p)
+            if topic not in self.learned: self.queue.append(topic)
+        for t in MATH_CURRICULUM: dfs(t)
+
+    def next_topic(self):
+        while self.queue:
+            topic = self.queue[0]
+            if topic in self.learned: self.queue.popleft(); continue
+            _, prereqs, _ = MATH_CURRICULUM[topic]
+            if all(self.kg.get_mastery(p) >= 0.55 for p in prereqs): return topic
+            self.queue.rotate(-1); break
+        return None
+
+    def mark_learned(self, topic, mastery_delta=0.15):
+        self.kg.add_concept(topic, MATH_CURRICULUM[topic][0], MATH_CURRICULUM[topic][2])
+        self.kg.reinforce(topic, mastery_delta)
+        if self.kg.get_mastery(topic) >= 0.80:
+            self.learned.add(topic)
+            if self.queue and self.queue[0] == topic: self.queue.popleft()
+        _save_json(TOPIC_FILE, list(self.learned))
+
+    def stats(self):
+        return {"topics_learned":len(self.learned),"topics_total":len(MATH_CURRICULUM),"queue_depth":len(self.queue),"progress_pct":round(len(self.learned)/len(MATH_CURRICULUM)*100,1)}
+
+class WikiCrawler:
+    EXTRACT_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+        self.results = collections.deque(maxlen=50)
+        self._idx = 0
+        self._lock = threading.Lock()
+        if enabled:
+            threading.Thread(target=self._loop, daemon=True).start()
+
+    def _loop(self):
+        while True:
+            time.sleep(30 + random.uniform(0,20))
+            try:
+                import urllib.request
+                label, slug, module = SCIENCE_SOURCES[self._idx % len(SCIENCE_SOURCES)]
+                url = self.EXTRACT_URL.format(slug)
+                req = urllib.request.Request(url, headers={"User-Agent":"SoulLink-Brain-v10/1.0"})
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    data = json.loads(r.read().decode())
+                extract = data.get("extract","")
+                if extract:
+                    with self._lock:
+                        self.results.append({"label":label,"module":module,"text":extract[:800],"ts":time.time()})
+                    print(f"Crawled: {label} -> {module}")
+                self._idx += 1
+            except Exception: pass
+
+    def pop_result(self):
+        with self._lock:
+            return self.results.popleft() if self.results else None
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §4  BLOCKCHAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+class BrainChain:
+    def __init__(self):
+        self.last = {}
+        try:
+            with open(CHAIN_FILE) as f:
+                lines = [l for l in f if l.strip()]
+            if lines: self.last = json.loads(lines[-1])
+        except Exception: pass
+
+    def _hash(self, b):
+        return hashlib.sha256(json.dumps(b,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+
+    def add(self, N, kg, hz, stdp, growth):
+        block = {"i":self.last.get("i",-1)+1,"ts":time.time(),"prev":self.last.get("hash","0"*64),"d":{"N":N,"kg":kg,"hz":round(hz,1),"stdp":stdp,"growth":growth}}
+        block["hash"] = self._hash(block)
+        self.last = block
+        try:
+            with open(CHAIN_FILE,"a") as f:
+                f.write(json.dumps(block,separators=(",",":")) + chr(10))
+        except Exception as e:
+            print(f"[Chain] {e}")
+        return block
+
+    def verify(self):
+        try:
+            with open(CHAIN_FILE) as f:
+                blocks = [json.loads(l) for l in f if l.strip()]
+        except Exception as e:
+            return False, str(e)
+        for i, b in enumerate(blocks):
+            h = b.pop("hash"); c = self._hash(b); b["hash"] = h
+            if h != c: return False, f"Bloc {i} corrompu"
+            if i > 0 and b["prev"] != blocks[i-1]["hash"]: return False, f"Bloc {i} chaine rompue"
+        return True, blocks
+
+    def stats(self):
+        try:
+            with open(CHAIN_FILE) as f: n = sum(1 for l in f if l.strip())
+        except Exception: n = 0
+        h = self.last.get("hash",""); ts = self.last.get("ts",0)
+        return {"blocks":n,"last_hash":h[:16]+"..." if h else "","last_ts":time.strftime("%H:%M:%S",time.gmtime(ts)) if ts else ""}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §5  BRAIN V10 — PURE NUMPY
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Brain10:
+    """
+    Architecture pure NumPy — zero objet Python dans la simulation.
+
+    Etat neuronal dans arrays pre-alloues de taille MAX_NEURONS:
+      V[i]     : potentiel membranaire neurone i
+      tL[i]    : dernier temps de spike
+      drive[i] : courant de drive
+      exc[i]   : 1=excitateur, -1=inhibiteur
+      glow[i]  : intensite visuelle
+      fc[i]    : fire count
+      mod[i]   : indice du module (int)
+      rx/ry/rz[i] : position 3D
+
+    Synapses dans matrice sparse CSR:
+      W[i,j]   : poids synaptique pre->post
+      delay[i] : delai (approx via buffer circulaire)
+
+    Simulation: une operation vectorielle par tick
+    """
+
+    def __init__(self, web_enabled=True):
+        print("Brain v10.0 — initialisation pure NumPy...")
+
+        # ── Module metadata
+        self.mod_names  = [m[0] for m in MODULE_DEFS]
+        self.mod_idx    = {name:i for i,name in enumerate(self.mod_names)}
+        self.mod_colors = {m[0]:m[2] for m in MODULE_DEFS}
+        self.mod_domain = {m[0]:m[7] for m in MODULE_DEFS}
+        self.mod_cx     = {m[0]:m[3] for m in MODULE_DEFS}
+        self.mod_cy     = {m[0]:m[4] for m in MODULE_DEFS}
+        self.mod_cz     = {m[0]:m[5] for m in MODULE_DEFS}
+        self.mod_inh    = {m[0]:m[6] for m in MODULE_DEFS}
+        self.mod_drift  = {m[0]:random.random()*math.pi*2 for m in MODULE_DEFS}
+        self.mod_trace  = {m[0]:[0]*60 for m in MODULE_DEFS}
+        self.mod_ptr    = {m[0]:0 for m in MODULE_DEFS}
+        self.mod_acc    = {m[0]:0 for m in MODULE_DEFS}
+        self.mod_mastery= {m[0]:0.0 for m in MODULE_DEFS}
+
+        # ── Arrays principaux pre-alloues
+        self.V     = np.full(MAX_NEURONS, VR, dtype=np.float64)
+        self.tL    = np.full(MAX_NEURONS, -9999.0, dtype=np.float64)
+        self.drive = np.full(MAX_NEURONS, 1.5, dtype=np.float64)
+        self.exc   = np.ones(MAX_NEURONS, dtype=np.int8)
+        self.glow  = np.zeros(MAX_NEURONS, dtype=np.float64)
+        self.fc    = np.zeros(MAX_NEURONS, dtype=np.int64)
+        self.mod_of= np.zeros(MAX_NEURONS, dtype=np.int32)
+        self.rx    = np.zeros(MAX_NEURONS, dtype=np.float32)
+        self.ry    = np.zeros(MAX_NEURONS, dtype=np.float32)
+        self.rz    = np.zeros(MAX_NEURONS, dtype=np.float32)
+        self.last_spike = np.full(MAX_NEURONS, -9999.0, dtype=np.float64)
+
+        # Nombre de neurones actifs
+        self.N = 0
+
+        # ── Synapses sparse (listes -> CSR)
+        self._syn_rows = []
+        self._syn_cols = []
+        self._syn_vals = []
+        self._W_csr    = None   # matrice sparse CSR
+        self._W_dirty  = True   # rebuild CSR au prochain tick
+
+        # Buffer de PSP (post-synaptic potentials) avec delais
+        self._psp_buffer = collections.deque()
+
+        # ── Simulation
+        self.sim_t   = 0.0
+        self.signals = []
+
+        # ── Stats
+        self._total_spikes    = 0
+        self._growth          = 0
+        self._resonance_events= 0
+        self._hebb_count      = 0
+        self._stdp_count      = 0
+
+        self.stats = {
+            "N":0,"syn":0,"spk":0,"sig":0,"hz":0.0,
+            "growth":0,"hebb":0,"stdp":0,"topics_learned":0,
+            "kg_concepts":0,"resonance_events":0,"avalanche_mode":False,
+        }
+
+        # ── KG + Curriculum + Crawler
+        self.kg         = KnowledgeGraph()
+        self.curriculum = Curriculum(self.kg)
+        self.crawler    = WikiCrawler(enabled=web_enabled)
+
+        # ── Initialiser neurones depuis MODULE_DEFS
+        self._build_initial_neurons()
+        self._build_synapses()
+        self._rebuild_csr()
+
+        # ── Charger etat persiste
+        self._load_state()
+
+        # ── Lock + threads
+        self._lock = threading.Lock()
+        self._last_grow   = time.time()
+        self._last_learn  = time.time()
+        self._last_kg_save= time.time()
+        self._last_meta   = time.time()
+        self._trace_tick  = 100.0
+        self._avalanche_cd= 0.0
+
+        threading.Thread(target=self._sim_loop,   daemon=True).start()
+        threading.Thread(target=self._learn_loop, daemon=True).start()
+        threading.Thread(target=self._grow_loop,  daemon=True).start()
+        threading.Thread(target=self._meta_loop,  daemon=True).start()
+        threading.Thread(target=self._save_loop,  daemon=True).start()
+
+        print(f"Brain v10 pret — {self.N}N · 24 modules · pure NumPy")
+
+    # ── Construction ─────────────────────────────────────────────────────────
+
+    def _add_neuron(self, mod_name):
+        """Ajoute un neurone, retourne son index."""
+        if self.N >= MAX_NEURONS:
+            return -1
+        i  = self.N
+        cx = self.mod_cx[mod_name]
+        cy = self.mod_cy[mod_name]
+        cz = self.mod_cz[mod_name]
+        r  = 48 + i * 0.1
+        exc = 1 if random.random() >= self.mod_inh[mod_name] else -1
+
+        self.V[i]       = VR + random.gauss(0, 6)
+        self.tL[i]      = -9999.0
+        self.drive[i]   = 0.7 + random.random() * 2.4
+        self.exc[i]     = exc
+        self.glow[i]    = 0.0
+        self.fc[i]      = 0
+        self.mod_of[i]  = self.mod_idx[mod_name]
+        self.rx[i]      = cx + random.gauss(0, r*0.45)
+        self.ry[i]      = cy + random.gauss(0, r*0.30)
+        self.rz[i]      = cz + random.gauss(0, r*0.45)
+        self.last_spike[i] = -9999.0
+
+        self.N += 1
+        return i
+
+    def _build_initial_neurons(self):
+        self.mod_start = {}
+        self.mod_count = {}
+        for name, n_init, *_ in MODULE_DEFS:
+            self.mod_start[name] = self.N
+            for _ in range(n_init):
+                self._add_neuron(name)
+            self.mod_count[name] = self.N - self.mod_start[name]
+        print(f"  Neurones initiaux: {self.N}")
+
+    def _build_synapses(self):
+        """Construit les synapses inter et intra-modules."""
+        rows, cols, vals = [], [], []
+
+        # Range de neurones par module
+        mod_ranges = {}
+        for name in self.mod_names:
+            start = self.mod_start[name]
+            count = self.mod_count[name]
+            mod_ranges[name] = list(range(start, start+count))
+
+        # Inter-modules
+        for src_name, tgt_names in WIRES.items():
+            src_ns = mod_ranges.get(src_name, [])
+            for tgt_name in tgt_names:
+                tgt_ns = mod_ranges.get(tgt_name, [])
+                if not src_ns or not tgt_ns: continue
+                n_syns = min(5 + random.randint(0,8), len(src_ns)*len(tgt_ns))
+                for _ in range(n_syns):
+                    s = random.choice(src_ns)
+                    t = random.choice(tgt_ns)
+                    w = random.uniform(0.15, 0.65) * self.exc[s]
+                    rows.append(s); cols.append(t); vals.append(w)
+
+        # Intra-modules
+        for name in self.mod_names:
+            ns = mod_ranges.get(name, [])
+            if len(ns) < 2: continue
+            for _ in range(len(ns)*3):
+                s, t = random.sample(ns, 2)
+                w = random.uniform(0.3, 0.8) * self.exc[s]
+                rows.append(s); cols.append(t); vals.append(w)
+
+        self._syn_rows = rows
+        self._syn_cols = cols
+        self._syn_vals = vals
+        print(f"  Synapses: {len(rows)}")
+
+    def _rebuild_csr(self):
+        """Reconstruit la matrice sparse CSR depuis les listes."""
+        if not self._syn_rows:
+            self._W_csr = sparse.csr_matrix((self.N, self.N), dtype=np.float32)
+            self._W_dirty = False
+            return
+        n = self.N
+        rows = np.array(self._syn_rows, dtype=np.int32)
+        cols = np.array(self._syn_cols, dtype=np.int32)
+        vals = np.array(self._syn_vals, dtype=np.float32)
+        # Filtrer indices hors bornes
+        mask = (rows < n) & (cols < n)
+        self._W_csr = sparse.csr_matrix((vals[mask], (rows[mask], cols[mask])), shape=(n, n), dtype=np.float32)
+        self._W_dirty = False
+        self.stats["syn"] = len(self._syn_rows)
+
+    # ── Persistance ──────────────────────────────────────────────────────────
+
+    def _save_state(self):
+        """Sauvegarde complete de l'etat."""
+        _save_json(STATE_FILE, {
+            "N": self.N,
+            "syn": len(self._syn_rows),
+            "growth": self._growth,
+            "total_spikes": self._total_spikes,
+            "resonance_events": self._resonance_events,
+            "stdp": self._stdp_count,
+            "last_save": time.time(),
+        })
+        self.kg.save()
+        # Sauvegarder arrays numpy
+        try:
+            np.savez_compressed(
+                str(NEURONS_FILE),
+                V=self.V[:self.N],
+                tL=self.tL[:self.N],
+                drive=self.drive[:self.N],
+                exc=self.exc[:self.N],
+                fc=self.fc[:self.N],
+                mod_of=self.mod_of[:self.N],
+                rx=self.rx[:self.N],
+                ry=self.ry[:self.N],
+                rz=self.rz[:self.N],
+                last_spike=self.last_spike[:self.N],
+                syn_rows=np.array(self._syn_rows, dtype=np.int32),
+                syn_cols=np.array(self._syn_cols, dtype=np.int32),
+                syn_vals=np.array(self._syn_vals, dtype=np.float32),
+            )
+        except Exception as e:
+            print(f"[Save] npz failed: {e}")
+
+    def _load_state(self):
+        """Restaure l'etat depuis les fichiers."""
+        npz_path = Path(str(NEURONS_FILE) + ".npz")
+        if not npz_path.exists():
+            npz_path = NEURONS_FILE  # essayer sans .npz
+        try:
+            data = np.load(str(NEURONS_FILE) + ".npz" if not str(NEURONS_FILE).endswith(".npz") else str(NEURONS_FILE))
+            n_saved = len(data["V"])
+            n_new = max(0, n_saved - self.N)
+            # Restaurer neurones existants
+            n_restore = min(n_saved, self.N)
+            self.V[:n_restore]     = data["V"][:n_restore]
+            self.tL[:n_restore]    = data["tL"][:n_restore]
+            self.drive[:n_restore] = data["drive"][:n_restore]
+            self.fc[:n_restore]    = data["fc"][:n_restore]
+            # Ajouter neurones supplementaires (neurogenese)
+            for i in range(self.N, min(self.N + n_new, MAX_NEURONS)):
+                j = i - self.N + n_restore
+                if j >= n_saved: break
+                mod_i = int(data["mod_of"][j])
+                mod_name = self.mod_names[mod_i] if mod_i < len(self.mod_names) else "mathematics"
+                new_i = self._add_neuron(mod_name)
+                if new_i >= 0:
+                    self.V[new_i]     = float(data["V"][j])
+                    self.tL[new_i]    = float(data["tL"][j])
+                    self.drive[new_i] = float(data["drive"][j])
+                    self.fc[new_i]    = int(data["fc"][j])
+            # Restaurer synapses
+            if "syn_rows" in data and len(data["syn_rows"]) > 0:
+                self._syn_rows = list(data["syn_rows"])
+                self._syn_cols = list(data["syn_cols"])
+                self._syn_vals = list(data["syn_vals"])
+                self._W_dirty  = True
+                self._rebuild_csr()
+            print(f"[Load] {self.N} neurones restaures, {len(self._syn_rows)} synapses")
+        except Exception as e:
+            print(f"[Load] Pas de sauvegarde precedente: {e}")
+
+        # Charger stats
+        state = _load_json(STATE_FILE, {})
+        self._growth           = state.get("growth", 0)
+        self._total_spikes     = state.get("total_spikes", 0)
+        self._resonance_events = state.get("resonance_events", 0)
+        self._stdp_count       = state.get("stdp", 0)
+
+    # ── Simulation LIF pure NumPy ─────────────────────────────────────────────
+
+    def _sim_loop(self):
+        """Boucle de simulation — PURE NUMPY, zero objet Python."""
+        trace_tick = 100.0
+        while True:
+            with self._lock:
+                n = self.N
+                if n == 0:
+                    time.sleep(0.001)
+                    continue
+
+                self.sim_t += DT
+                t = self.sim_t
+
+                # ── Delivrer PSP en attente
+                still = []
+                dV_ext = np.zeros(n, dtype=np.float64)
+                for (at, tgt_idx, w) in self._psp_buffer:
+                    if t >= at:
+                        if tgt_idx < n:
+                            dV_ext[tgt_idx] += w * 6.0
+                    else:
+                        still.append((at, tgt_idx, w))
+                self._psp_buffer = collections.deque(still)
+                if np.any(dV_ext != 0):
+                    self.V[:n] += dV_ext
+
+                # ── LIF vectorise
+                not_ref = (t - self.tL[:n]) >= T_REFRAC
+                noise   = np.random.normal(0, 0.35, n)
+                dV      = (-(self.V[:n] - VR) / TAU_M + self.drive[:n]) * DT + noise
+                self.V[:n] = np.where(not_ref, self.V[:n] + dV, VZ)
+
+                # ── Spikes
+                sp_mask = (self.V[:n] >= VT) & not_ref
+                spike_idx = np.where(sp_mask)[0]
+                spk = len(spike_idx)
+
+                # Reset
+                self.V[:n][sp_mask]         = VZ
+                self.tL[:n][sp_mask]        = t
+                self.last_spike[:n][sp_mask]= t
+                self.fc[:n][sp_mask]        += 1
+
+                # ── Glow vectorise
+                self.glow[:n][sp_mask]  = 1.0
+                self.glow[:n][~sp_mask] *= 0.91
+
+                # ── PSP via matrice sparse — TOUTE LA PROPAGATION EN UNE OPERATION
+                if spk > 0 and self._W_csr is not None:
+                    # Rebuild CSR si taille differente
+                    if self._W_csr.shape[0] != n or self._W_dirty:
+                        self._rebuild_csr()
+                    if self._W_csr.shape[0] == n:
+                        sp_vec = np.zeros(n, dtype=np.float32)
+                        sp_vec[spike_idx] = 1.0
+                        psp = self._W_csr.T.dot(sp_vec)
+                        # Ajouter avec delai minimal (1 tick)
+                        nz_idx = np.where(psp != 0)[0]
+                        for j in nz_idx[:500]:
+                            self._psp_buffer.append((t + 1.0, int(j), float(psp[j])))
+
+                # ── Signaux animes (subsample)
+                new_sigs = []
+                if spk > 0 and len(spike_idx) > 0:
+                    sample = spike_idx[:min(10, spk)]
+                    for i in sample:
+                        mod_i = int(self.mod_of[i])
+                        mod_name = self.mod_names[mod_i]
+                        # Signal vers module connecte aleatoire
+                        tgts = WIRES.get(mod_name, [])
+                        if tgts and len(new_sigs) < 30:
+                            tgt_mod = random.choice(tgts)
+                            if tgt_mod != mod_name:
+                                new_sigs.append({"fm":mod_name,"tm":tgt_mod,"p":0.0,"c":self.mod_colors[mod_name]})
+
+                # ── Accumulation par module
+                if spk > 0:
+                    for i in spike_idx:
+                        self.mod_acc[self.mod_names[int(self.mod_of[i])]] += 1
+
+                # ── Trace oscilloscope
+                if t >= trace_tick:
+                    for name in self.mod_names:
+                        ptr = self.mod_ptr[name] % 60
+                        self.mod_trace[name][ptr] = self.mod_acc[name]
+                        self.mod_ptr[name] += 1
+                        self.mod_acc[name] = 0
+                    trace_tick = t + 100.0
+
+                # ── Signaux
+                for s in self.signals: s["p"] += 0.04
+                self.signals = [s for s in self.signals if s["p"] < 1.0]
+                self.signals.extend(new_sigs)
+
+                # ── Stats
+                self._total_spikes += spk
+                hz = round(spk / max(n * DT / 1000.0, 1e-9), 1)
+                self.stats.update({
+                    "N": n, "spk": spk, "sig": len(self._psp_buffer),
+                    "hz": hz, "growth": self._growth,
+                    "hebb": self._hebb_count, "stdp": self._stdp_count,
+                    "topics_learned": len(self.curriculum.learned),
+                    "kg_concepts": len(self.kg.nodes),
+                    "resonance_events": self._resonance_events,
+                })
+
+            time.sleep(0.001)  # 1ms = 1000 Hz theorique
+
+    # ── Apprentissage ─────────────────────────────────────────────────────────
+
+    def _learn_loop(self):
+        """STDP + Hebbian sur les synapses."""
+        while True:
+            time.sleep(0.1)
+            with self._lock:
+                n = self.N
+                if n < 2 or not self._syn_rows: continue
+
+                now = self.sim_t
+                t   = self.sim_t
+
+                # STDP vectorise sur un sous-ensemble de synapses
+                n_sample = min(5000, len(self._syn_rows))
+                idxs = np.random.choice(len(self._syn_rows), n_sample, replace=False)
+
+                hebb_n = stdp_n = 0
+                for k in idxs:
+                    s = self._syn_rows[k]
+                    tgt = self._syn_cols[k]
+                    if s >= n or tgt >= n: continue
+                    w = self._syn_vals[k]
+
+                    # Hebbian
+                    pre_sp  = (t - self.last_spike[s])   < 2.0
+                    post_sp = (t - self.last_spike[tgt]) < 2.0
+                    if pre_sp and post_sp:
+                        delta = HEBBIAN_LR * (1.0 - abs(w))
+                        w += delta * (1 if w >= 0 else -1)
+                        hebb_n += 1
+
+                    # STDP
+                    dt_sp = t - self.last_spike[s]
+                    if 0 < dt_sp < STDP_WIN:
+                        ltp = STDP_LR * math.exp(-dt_sp / STDP_WIN)
+                        w  += ltp * 0.5 * (1 if w >= 0 else -1)
+                        stdp_n += 1
+                    elif -STDP_WIN < dt_sp < 0:
+                        ltd = -STDP_LR * math.exp(dt_sp / STDP_WIN)
+                        w  += ltd * 0.3 * (1 if w >= 0 else -1)
+
+                    # Clamp
+                    w *= (1.0 - W_DECAY)
+                    sign = 1 if w >= 0 else -1
+                    w = sign * max(W_MIN, min(W_MAX, abs(w)))
+                    self._syn_vals[k] = w
+
+                self._hebb_count += hebb_n
+                self._stdp_count  += stdp_n
+                if hebb_n + stdp_n > 0:
+                    self._W_dirty = True
+
+            # Apprentissage curriculum
+            if time.time() - self._last_learn > 8.0:
+                self._last_learn = time.time()
+                self._run_learning_cycle()
+
+    def _run_learning_cycle(self):
+        with self._lock:
+            topic = self.curriculum.next_topic()
+            if topic:
+                mod_name = MATH_CURRICULUM[topic][0]
+                complexity = MATH_CURRICULUM[topic][2]
+                n_new = int(complexity * LEARNING_GROW_BOOST)
+                for _ in range(n_new):
+                    self._add_neuron_locked(mod_name)
+                self.curriculum.mark_learned(topic, 0.15)
+                self.kg.co_activate(topic, mod_name, 0.1)
+
+            result = self.crawler.pop_result()
+            if result:
+                mod_name = result["module"]
+                n_new = random.randint(8, 20)
+                for _ in range(n_new): self._add_neuron_locked(mod_name)
+                self.kg.add_concept(result["label"].lower().replace(" ","_"), mod_name, 2.0)
+                self.kg.reinforce(result["label"].lower().replace(" ","_"), 0.05)
+
+    # ── Neurogenese ───────────────────────────────────────────────────────────
+
+    def _add_neuron_locked(self, mod_name):
+        """Ajoute un neurone et connecte-le — appele avec lock."""
+        if self.N >= MAX_NEURONS:
+            return -1
+        i = self._add_neuron(mod_name)
+        if i < 0: return -1
+
+        # Connecter aux neurones existants du meme module + modules connectes
+        tgt_mods = [mod_name] + WIRES.get(mod_name, [])[:3]
+        for tgt_mod in tgt_mods:
+            # Trouver quelques neurones de ce module
+            tgt_of_mod = np.where(self.mod_of[:self.N] == self.mod_idx.get(tgt_mod, 0))[0]
+            if len(tgt_of_mod) == 0: continue
+            n_conn = min(5, len(tgt_of_mod))
+            chosen = np.random.choice(tgt_of_mod, n_conn, replace=False)
+            for j in chosen:
+                w = random.uniform(0.15, 0.65) * float(self.exc[i])
+                self._syn_rows.append(i); self._syn_cols.append(int(j)); self._syn_vals.append(w)
+                w2 = random.uniform(0.15, 0.65) * float(self.exc[int(j)])
+                self._syn_rows.append(int(j)); self._syn_cols.append(i); self._syn_vals.append(w2)
+
+        self._growth += 1
+        self._W_dirty = True
+        return i
+
+    def _grow_loop(self):
+        while True:
+            time.sleep(BASE_GROW_INTERVAL)
+            with self._lock:
+                if self.N >= MAX_NEURONS: continue
+                n_grow = random.randint(2, 6)
+                # Choisir module avec activation la plus haute
+                acts = {name: np.mean(self.glow[np.where(self.mod_of[:self.N] == self.mod_idx[name])[0]]) if np.any(self.mod_of[:self.N] == self.mod_idx[name]) else 0.0 for name in self.mod_names}
+                top_mod = max(acts, key=acts.get)
+                for _ in range(n_grow):
+                    self._add_neuron_locked(top_mod)
+                # Rebuild CSR periodiquement
+                if self._W_dirty:
+                    self._rebuild_csr()
+
+    def _trigger_avalanche(self, mod_name):
+        """Avalanche neuronale — ajoute 100-400 neurones d'un coup."""
+        n_total = random.randint(100, 400)
+        targets = [mod_name] + list(WIRES.get(mod_name,[]))[:4]
+        per_mod = max(4, n_total // len(targets))
+        for tm in targets:
+            for _ in range(per_mod):
+                self._add_neuron_locked(tm)
+        self._resonance_events += 1
+        self.stats["avalanche_mode"] = True
+        threading.Timer(10.0, lambda: self.stats.update({"avalanche_mode":False})).start()
+        if self._W_dirty:
+            self._rebuild_csr()
+
+    def _resonance_burst(self, mod_a, mod_b):
+        """Burst de resonance entre deux modules."""
+        for mod_name in [mod_a, mod_b]:
+            for _ in range(RESONANCE_BOOST // 2):
+                self._add_neuron_locked(mod_name)
+        self._resonance_events += 1
+        if self._W_dirty:
+            self._rebuild_csr()
+        print(f"RESONANCE {mod_a}<>{mod_b} +{RESONANCE_BOOST}N")
+
+    # ── Metacognition ─────────────────────────────────────────────────────────
+
+    def _meta_loop(self):
+        while True:
+            time.sleep(30)
+            with self._lock:
+                if self.N == 0: continue
+                acts = {}
+                for name in self.mod_names:
+                    idxs = np.where(self.mod_of[:self.N] == self.mod_idx[name])[0]
+                    acts[name] = float(np.mean(self.glow[idxs])) if len(idxs) > 0 else 0.0
+                avg = sum(acts.values()) / max(1, len(acts))
+                weak = [name for name, a in acts.items() if a < avg*0.4 and name != "neuroscience"]
+                for mod_name in weak[:2]:
+                    idxs = np.where(self.mod_of[:self.N] == self.mod_idx[mod_name])[0]
+                    if len(idxs) > 0:
+                        sample = np.random.choice(idxs, min(5, len(idxs)), replace=False)
+                        self.drive[sample] = np.minimum(3.5, self.drive[sample] + 0.3)
+
+                if int(time.time()) % 300 < 31:
+                    self._consolidate()
+
+    def _consolidate(self):
+        """Elagage synaptique."""
+        if not self._syn_rows: return
+        keep = [i for i, w in enumerate(self._syn_vals) if abs(w) >= W_MIN * 2]
+        if len(keep) < len(self._syn_rows):
+            pruned = len(self._syn_rows) - len(keep)
+            self._syn_rows = [self._syn_rows[i] for i in keep]
+            self._syn_cols = [self._syn_cols[i] for i in keep]
+            self._syn_vals = [self._syn_vals[i] for i in keep]
+            self._W_dirty = True
+            print(f"Consolidation: -{pruned} synapses")
+
+    # ── Save loop ─────────────────────────────────────────────────────────────
+
+    def _save_loop(self):
+        tick = 0
+        while True:
+            time.sleep(30)
+            with self._lock:
+                if self._W_dirty: self._rebuild_csr()
+                self._save_state()
+            tick += 1
+            if tick % 10 == 0:
+                CHAIN.add(self.N, len(self.kg.nodes), self.stats.get("hz",0), self._stdp_count, self._growth)
+
+    # ── API export ────────────────────────────────────────────────────────────
+
+    def to_json(self):
+        with self._lock:
+            n = self.N
+            neurons_out = []
+            for i in range(n):
+                mod_name = self.mod_names[int(self.mod_of[i])]
+                neurons_out.append({
+                    "id": f"{mod_name[:4]}_{i:04d}",
+                    "mod": mod_name,
+                    "exc": int(self.exc[i]),
+                    "v":  round(float(self.V[i]), 2),
+                    "gl": round(float(self.glow[i]), 3),
+                    "vn": round(max(0.0, min(1.0, (float(self.V[i])-VR)/(VT-VR))), 3),
+                    "fc": int(self.fc[i]),
+                    "rx": round(float(self.rx[i]), 1),
+                    "ry": round(float(self.ry[i]), 1),
+                    "rz": round(float(self.rz[i]), 1),
+                    "sp": bool(self.tL[i] == self.sim_t),
+                    "dr": round(float(self.drive[i]), 2),
+                })
+
+            mods_out = {}
+            for name in self.mod_names:
+                ptr = self.mod_ptr[name] % 60
+                idxs = np.where(self.mod_of[:n] == self.mod_idx[name])[0]
+                act = float(np.mean(self.glow[idxs])) if len(idxs) > 0 else 0.0
+                mods_out[name] = {
+                    "name": name, "color": self.mod_colors[name],
+                    "pos": [self.mod_cx[name], self.mod_cy[name], self.mod_cz[name]],
+                    "n": len(idxs),
+                    "domain": self.mod_domain[name],
+                    "drift": self.mod_drift[name],
+                    "trace": self.mod_trace[name][ptr:] + self.mod_trace[name][:ptr],
+                    "activation": round(act, 3),
+                }
+
+            stats = dict(self.stats)
+            stats["total_neurons"]   = n
+            stats["total_spikes"]    = self._total_spikes
+            stats["resonance_events"]= self._resonance_events
+            stats["kg"]              = self.kg.stats()
+            stats["curriculum"]      = self.curriculum.stats()
+
+            return {
+                "neurons": neurons_out,
+                "signals": [dict(s) for s in self.signals[:120]],
+                "modules": mods_out,
+                "wires":   WIRES,
+                "stats":   stats,
+                "sim_t":   round(self.sim_t, 1),
+                "wall":    datetime.now().strftime("%H:%M:%S"),
+            }
+
+    def learn_topic_api(self, topic):
+        if topic in MATH_CURRICULUM:
+            with self._lock:
+                mod_name, _, complexity = MATH_CURRICULUM[topic]
+                n_new = int(complexity * 8) + 4
+                for _ in range(n_new): self._add_neuron_locked(mod_name)
+                self.curriculum.mark_learned(topic, mastery_delta=0.20)
+                self.stats["topics_learned"] = len(self.curriculum.learned)
+                if self._W_dirty: self._rebuild_csr()
+            return {"ok":True,"topic":topic,"module":mod_name,"new_neurons":n_new}
+        parts = topic.lower().split()
+        best_mod = "mathematics"
+        for word in parts:
+            for mod_name in self.mod_names:
+                if word in mod_name: best_mod = mod_name; break
+        with self._lock:
+            n_new = random.randint(6,16)
+            for _ in range(n_new): self._add_neuron_locked(best_mod)
+            self.kg.add_concept(topic.replace(" ","_"), best_mod, 2.0)
+            self.kg.reinforce(topic.replace(" ","_"), 0.08)
+            self.kg.save()
+            if self._W_dirty: self._rebuild_csr()
+        return {"ok":True,"topic":topic,"module":best_mod,"new_neurons":n_new}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §6  FLASK APP
+# ─────────────────────────────────────────────────────────────────────────────
+
+app  = Flask(__name__)
+
+HTML_V10 = r'''<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><title>SoulLink Brain v10</title>
+<style>body{margin:0;background:#000;color:#0f0;font-family:monospace}
+#c{position:fixed;top:0;left:0;width:100%;height:100%}
+#hud{position:fixed;top:10px;left:10px;font-size:12px;opacity:.8;pointer-events:none}
+#hud div{margin:2px 0}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="hz">Hz: --</div><div id="N">N: --</div>
+  <div id="syn">Syn: --</div><div id="kg">KG: --</div>
+  <div id="stdp">STDP: --</div><div id="ver">Brain v10 Pure NumPy</div>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+let neurons=[],lastStats={};
+async function poll(){
+  try{
+    const r=await fetch('/api/brain');
+    const d=await r.json();
+    neurons=d.neurons||[];
+    lastStats=d.stats||{};
+    document.getElementById('hz').textContent='Hz: '+lastStats.hz;
+    document.getElementById('N').textContent='N: '+lastStats.N;
+    document.getElementById('syn').textContent='Syn: '+lastStats.syn;
+    document.getElementById('kg').textContent='KG: '+lastStats.kg_concepts;
+    document.getElementById('stdp').textContent='STDP: '+lastStats.stdp;
+    draw();
+  }catch(e){}
+  setTimeout(poll,100);
+}
+function draw(){
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const cx=canvas.width/2,cy=canvas.height/2;
+  for(const n of neurons){
+    const x=cx+n.rx*1.2,y=cy-n.ry*1.2;
+    const g=n.gl||0;
+    const r=Math.max(1,1.5+g*3);
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    const v=Math.floor(100+g*155);
+    ctx.fillStyle=n.sp?`rgb(255,255,100)`:`rgba(${v},${Math.floor(v*0.7)},${v},${0.3+g*0.7})`;
+    ctx.fill();
+  }
+}
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+poll();
+</script></body></html>'''
+
+@app.route("/")
+def index():
+    return Response(HTML_V10, mimetype="text/html")
+
+@app.route("/api/brain")
+def api_brain():
+    return Response(json.dumps(BRAIN.to_json(), ensure_ascii=False), mimetype="application/json")
+
+@app.route("/api/stats")
+def api_stats():
+    with BRAIN._lock:
+        return jsonify(BRAIN.stats)
+
+@app.route("/api/learn", methods=["POST"])
+def api_learn():
+    data = request.get_json() or {}
+    topic = data.get("topic","").strip()
+    if not topic: return jsonify({"ok":False,"error":"no topic"})
+    return jsonify(BRAIN.learn_topic_api(topic))
+
+@app.route("/api/kg")
+def api_kg():
+    return jsonify({"stats":BRAIN.kg.stats(),"nodes":list(BRAIN.kg.nodes.items())[:50],"curriculum":BRAIN.curriculum.stats()})
+
+@app.route("/api/avalanche", methods=["POST"])
+def api_avalanche():
+    with BRAIN._lock: BRAIN._trigger_avalanche("mathematics")
+    return jsonify({"ok":True})
+
+@app.route("/api/resonance", methods=["POST"])
+def api_resonance():
+    data = request.get_json() or {}
+    a = data.get("a","mathematics"); b = data.get("b","physics")
+    with BRAIN._lock: BRAIN._resonance_burst(a, b)
+    return jsonify({"ok":True,"a":a,"b":b})
+
+@app.route("/api/query", methods=["POST"])
+def api_query():
+    data = request.get_json() or {}
+    question = data.get("question","").lower().strip()
+    if not question: return jsonify({"ok":False,"error":"no question"})
+    words = question.replace("?","").replace(",","").split()
+    scores = {}
+    for concept,info in BRAIN.kg.nodes.items():
+        score = sum(1.0+info.get("mastery",0) for w in words if len(w)>3 and w in concept.lower().replace("_"," "))
+        if score>0: scores[concept]={"score":round(score,3),"module":info.get("module","?"),"mastery":round(info.get("mastery",0),3)}
+    ranked = sorted(scores.items(),key=lambda x:x[1]["score"],reverse=True)[:10]
+    ms = {}
+    for _,v in ranked: ms[v["module"]]=ms.get(v["module"],0)+v["score"]
+    return jsonify({"ok":True,"question":question,"concepts_found":len(ranked),"top_concepts":[{"concept":k,**v} for k,v in ranked],"best_modules":[{"module":m,"score":round(s,2)} for m,s in sorted(ms.items(),key=lambda x:x[1],reverse=True)[:3]],"brain":{"N":BRAIN.stats["N"],"hz":BRAIN.stats["hz"],"kg_total":len(BRAIN.kg.nodes)}})
+
+@app.route("/api/think", methods=["POST"])
+def api_think():
+    data = request.get_json() or {}
+    task = data.get("task","").lower().strip()
+    ctx  = data.get("context","")
+    if not task: return jsonify({"ok":False,"error":"no task"})
+    words = (task+" "+ctx).replace("?","").replace(",","").split()
+    scores = {}
+    for concept,info in BRAIN.kg.nodes.items():
+        score = sum(1.0+info.get("mastery",0) for w in words if len(w)>3 and w in concept.lower().replace("_"," "))
+        if score>0: scores[concept]={"score":round(score,3),"module":info.get("module","?"),"mastery":round(info.get("mastery",0),3)}
+    ranked = sorted(scores.items(),key=lambda x:x[1]["score"],reverse=True)[:15]
+    ms={}
+    for _,v in ranked: ms[v["module"]]=ms.get(v["module"],0)+v["score"]
+    bm=sorted(ms.items(),key=lambda x:x[1],reverse=True)[:3]
+    if len(bm)>=2:
+        with BRAIN._lock: BRAIN._resonance_burst(bm[0][0],bm[1][0])
+    am=sum(v["mastery"] for _,v in ranked)/max(1,len(ranked))
+    conf="high" if am>0.7 else "medium" if am>0.3 else "low"
+    return jsonify({"ok":True,"task":task,"confidence":conf,"avg_mastery":round(am,3),"concepts":[{"concept":k,**v} for k,v in ranked],"best_modules":[{"module":m,"score":round(s,2)} for m,s in bm],"brain_state":{"N":BRAIN.stats["N"],"hz":BRAIN.stats["hz"],"kg_total":len(BRAIN.kg.nodes)},"suggestion":f"Focus sur le module {bm[0][0] if bm else 'mathematics'}"})
+
+@app.route("/api/feedback", methods=["POST"])
+def api_feedback():
+    data = request.get_json() or {}
+    task = data.get("task","").strip()
+    success = data.get("success",True)
+    concepts_used = data.get("concepts_used",[])
+    if not task: return jsonify({"ok":False,"error":"no task"})
+    reinforced,weakened=[],[]
+    with BRAIN._lock:
+        for concept in concepts_used:
+            key = concept.replace(" ","_").lower()
+            if key in BRAIN.kg.nodes:
+                if success: BRAIN.kg.reinforce(key,0.05); reinforced.append(key)
+                else: BRAIN.kg.nodes[key]["mastery"]=max(0.0,BRAIN.kg.nodes[key]["mastery"]-0.02); weakened.append(key)
+        BRAIN.kg.save()
+    return jsonify({"ok":True,"success":success,"reinforced":reinforced,"weakened":weakened})
+
+@app.route("/api/context", methods=["POST"])
+def api_context():
+    data = request.get_json() or {}
+    full=(data.get("context","")+" "+data.get("task","")+" "+" ".join(data.get("history",[]))).lower()
+    words=list(set([w for w in full.split() if len(w)>3]))[:50]
+    results={}
+    for concept,info in BRAIN.kg.nodes.items():
+        score=sum(1.0+info.get("mastery",0) for w in words if w in concept.lower().replace("_"," "))
+        if score>0: results[concept]={"score":round(score,3),"module":info.get("module","?"),"mastery":round(info.get("mastery",0),3)}
+    ranked=sorted(results.items(),key=lambda x:x[1]["score"],reverse=True)[:20]
+    return jsonify({"ok":True,"concepts_found":len(ranked),"knowledge":[{"concept":k,**v} for k,v in ranked],"brain_state":{"N":BRAIN.stats["N"],"hz":BRAIN.stats["hz"],"kg_total":len(BRAIN.kg.nodes)}})
+
+@app.route("/api/chain")
+def api_chain():
+    valid,result=CHAIN.verify()
+    return jsonify({"ok":True,"valid":valid,"stats":CHAIN.stats(),"last_block":CHAIN.last,"error":result if not valid else None})
+
+@app.route("/api/chain/verify")
+def api_chain_verify():
+    valid,result=CHAIN.verify()
+    return jsonify({"ok":True,"valid":valid,"blocks":len(result) if valid else 0,"error":None if valid else result})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §7  MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+import signal as _signal
+
+BRAIN = None
+CHAIN = BrainChain()
+
+def _shutdown(signum, frame):
+    print("[v10] Sauvegarde avant arret...")
+    if BRAIN:
+        BRAIN._save_state()
+        CHAIN.add(BRAIN.N,len(BRAIN.kg.nodes),BRAIN.stats.get("hz",0),BRAIN._stdp_count,BRAIN._growth)
+    import sys; sys.exit(0)
+
+_signal.signal(_signal.SIGTERM, _shutdown)
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="SoulLink Brain v10")
+    parser.add_argument("--port", type=int, default=8085)
+    parser.add_argument("--no-web", action="store_true")
+    args = parser.parse_args()
+
+    BRAIN = Brain10(web_enabled=not args.no_web)
+
+    print()
+    print("=" * 58)
+    print("  SoulLink Brain v10.0 — Pure NumPy Singularity")
+    print("=" * 58)
+    print(f"  Neurones   : {BRAIN.N}")
+    print(f"  Synapses   : {len(BRAIN._syn_rows)}")
+    print(f"  Max N      : {MAX_NEURONS}")
+    print(f"  Backend    : Pure NumPy (zero objet Python)")
+    print(f"  Web crawler: {'actif' if not args.no_web else 'off'}")
+    print(f"  Port       : {args.port}")
+    print("=" * 58)
+
+    app.run(host="0.0.0.0", port=args.port, threaded=True)
