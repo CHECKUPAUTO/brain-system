@@ -1,0 +1,61 @@
+{
+  "nodes": {
+    "bitcoin": {
+      "module": "blockchain_tech",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661156.386229
+    },
+    "ethereum": {
+      "module": "blockchain_tech",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661196.6533842
+    },
+    "crypto_global_market": {
+      "module": "markets",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661204.7604742
+    },
+    "fear_greed_17": {
+      "module": "sentiment",
+      "mastery": 0.1,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775661212.8271337
+    },
+    "blockchain": {
+      "module": "blockchain_tech",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661236.977214
+    },
+    "cryptography": {
+      "module": "cryptography",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661261.2187428
+    },
+    "bitcoin_data": {
+      "module": "blockchain_tech",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661277.421011
+    },
+    "smart_contract": {
+      "module": "defi",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661293.4673212
+    }
+  },
+  "edges": {}
+}

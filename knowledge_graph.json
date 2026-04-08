@@ -2,211 +2,211 @@
   "nodes": {
     "euler's_formula": {
       "module": "mathematics",
-      "mastery": 0.49999999999999994,
-      "times": 10,
+      "mastery": 0.65,
+      "times": 13,
       "complexity": 2.0,
       "first_seen": 1775649919.9960358
     },
     "fourier_transform": {
       "module": "calculus",
-      "mastery": 0.44999999999999996,
-      "times": 9,
+      "mastery": 0.6,
+      "times": 12,
       "complexity": 2.0,
       "first_seen": 1775649960.245172
     },
     "linear_algebra": {
       "module": "algebra",
-      "mastery": 0.44999999999999996,
-      "times": 9,
+      "mastery": 0.6,
+      "times": 12,
       "complexity": 2.0,
       "first_seen": 1775650000.487198
     },
     "prime_numbers": {
       "module": "mathematics",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650048.795953
     },
     "riemann_hypothesis": {
       "module": "mathematics",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650089.1683168
     },
     "calculus": {
       "module": "calculus",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650121.7794368
     },
     "group_theory": {
       "module": "algebra",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650162.2043884
     },
     "entropy": {
       "module": "information",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650194.446221
     },
     "turing_completeness": {
       "module": "computation",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650226.6590652
     },
     "quantum_mechanics": {
       "module": "physics",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650274.9057815
     },
     "topology": {
       "module": "geometry",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650307.2393837
     },
     "bayesian_inference": {
       "module": "statistics",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650339.623058
     },
     "kolmogorov_complexity": {
       "module": "information",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650388.166796
     },
     "category_theory": {
       "module": "algebra",
-      "mastery": 0.39999999999999997,
-      "times": 8,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650420.3387864
     },
     "mandelbrot_set": {
       "module": "patterns",
-      "mastery": 0.35,
-      "times": 7,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650460.7125533
     },
     "navier-stokes": {
       "module": "physics",
-      "mastery": 0.35,
-      "times": 7,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650485.0730824
     },
     "godel_theorems": {
       "module": "logic",
-      "mastery": 0.35,
-      "times": 7,
+      "mastery": 0.49999999999999994,
+      "times": 10,
       "complexity": 2.0,
       "first_seen": 1775650525.4195402
     },
     "neural_network_math": {
       "module": "neuroscience",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650565.732358
     },
     "p_vs_np": {
       "module": "computation",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650606.2061172
     },
     "chaos_theory": {
       "module": "mathematics",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650654.5909567
     },
     "graph_theory": {
       "module": "computation",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650694.9325254
     },
     "differential_geometry": {
       "module": "geometry",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650727.4149988
     },
     "stochastic_process": {
       "module": "statistics",
-      "mastery": 0.3,
-      "times": 6,
+      "mastery": 0.44999999999999996,
+      "times": 9,
       "complexity": 2.0,
       "first_seen": 1775650767.7136092
     },
     "automata_theory": {
       "module": "computation",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651738.6876822
     },
     "lambda_calculus": {
       "module": "logic",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651770.9683356
     },
     "tensor_calculus": {
       "module": "calculus",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651811.2736967
     },
     "algebraic_topology": {
       "module": "algebra",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651851.6370606
     },
     "information_geometry": {
       "module": "information",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651883.999427
     },
     "statistical_mechanics": {
       "module": "physics",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651916.3345382
     },
     "game_theory": {
       "module": "optimization",
-      "mastery": 0.25,
-      "times": 5,
+      "mastery": 0.39999999999999997,
+      "times": 8,
       "complexity": 2.0,
       "first_seen": 1775651964.7548854
     }

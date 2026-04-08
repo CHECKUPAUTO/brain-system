@@ -1,0 +1,47 @@
+{
+  "nodes": {
+    "algorithms": {
+      "module": "computation",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661145.249476
+    },
+    "gradient_descent": {
+      "module": "optimization",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661169.400838
+    },
+    "formal_logic": {
+      "module": "logic",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661209.6584468
+    },
+    "category_theory": {
+      "module": "algebra",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661241.9829507
+    },
+    "p_vs_np": {
+      "module": "computation",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661282.1965954
+    },
+    "lambda_calculus": {
+      "module": "logic",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661314.3987074
+    }
+  },
+  "edges": {}
+}

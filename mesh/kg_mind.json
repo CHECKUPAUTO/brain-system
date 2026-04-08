@@ -1,0 +1,47 @@
+{
+  "nodes": {
+    "neuroplasticity": {
+      "module": "neuroscience",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661142.210416
+    },
+    "consciousness": {
+      "module": "philosophy",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661166.4552019
+    },
+    "neural_oscillation": {
+      "module": "neuroscience",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661198.6487515
+    },
+    "hebbian_learning": {
+      "module": "neuroscience",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661222.866782
+    },
+    "working_memory": {
+      "module": "memory",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661263.1023686
+    },
+    "attention": {
+      "module": "attention",
+      "mastery": 0.05,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775661295.2531703
+    }
+  },
+  "edges": {}
+}

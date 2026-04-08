@@ -1,9 +1,9 @@
 {
-  "N": 11480,
-  "syn": 441225,
-  "growth": 11080,
-  "total_spikes": 1089557828,
+  "N": 13386,
+  "syn": 517435,
+  "growth": 12986,
+  "total_spikes": 1863422670,
   "resonance_events": 0,
-  "stdp": 176291709,
-  "last_save": 1775658210.41308
+  "stdp": 263613411,
+  "last_save": 1775661320.3638148
 }
