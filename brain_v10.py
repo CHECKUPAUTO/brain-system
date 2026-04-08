@@ -634,18 +634,11 @@ class Brain10:
                 self.sim_t += DT
                 t = self.sim_t
 
-                # ── Delivrer PSP en attente
-                still = []
-                dV_ext = np.zeros(n, dtype=np.float64)
-                for (at, tgt_idx, w) in self._psp_buffer:
-                    if t >= at:
-                        if tgt_idx < n:
-                            dV_ext[tgt_idx] += w * 6.0
-                    else:
-                        still.append((at, tgt_idx, w))
-                self._psp_buffer = collections.deque(still)
-                if np.any(dV_ext != 0):
-                    self.V[:n] += dV_ext
+                # ── Delivrer PSP — array direct
+                if hasattr(self, '_psp_next') and self._psp_next is not None:
+                    psp_n = min(len(self._psp_next), n)
+                    self.V[:psp_n] += self._psp_next[:psp_n] * 6.0
+                    self._psp_next = None
 
                 # ── LIF vectorise
                 not_ref = (t - self.tL[:n]) >= T_REFRAC
@@ -670,17 +663,15 @@ class Brain10:
 
                 # ── PSP via matrice sparse — TOUTE LA PROPAGATION EN UNE OPERATION
                 if spk > 0 and self._W_csr is not None:
-                    # Rebuild CSR si taille differente
-                    if self._W_csr.shape[0] != n or self._W_dirty:
+                    # Rebuild CSR seulement si taille differente (pas _dirty seul)
+                    if self._W_csr.shape[0] != n:
                         self._rebuild_csr()
                     if self._W_csr.shape[0] == n:
                         sp_vec = np.zeros(n, dtype=np.float32)
                         sp_vec[spike_idx] = 1.0
                         psp = self._W_csr.T.dot(sp_vec)
-                        # Ajouter avec delai minimal (1 tick)
-                        nz_idx = np.where(psp != 0)[0]
-                        for j in nz_idx[:500]:
-                            self._psp_buffer.append((t + 1.0, int(j), float(psp[j])))
+                        # PSP vectorise — appliquer directement au prochain tick
+                        self._psp_next = psp.astype(np.float64)
 
                 # ── Signaux animes (subsample)
                 new_sigs = []
@@ -836,7 +827,8 @@ class Brain10:
 
     def _grow_loop(self):
         while True:
-            time.sleep(BASE_GROW_INTERVAL)
+            hz_now = BRAIN.stats.get('hz',0) if BRAIN else 0
+            time.sleep(BASE_GROW_INTERVAL * (3.0 if hz_now > 200 else 1.5 if hz_now > 100 else 1.0))
             with self._lock:
                 if self.N >= MAX_NEURONS: continue
                 n_grow = random.randint(2, 6)
