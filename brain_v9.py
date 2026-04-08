@@ -16,36 +16,6 @@ Usage:
 """
 
 import random, threading, time, math, json, os, hashlib, collections
-import numpy as _np
-
-# JAX vectorized LIF
-try:
-    import jax, jax.numpy as jnp
-    _JAX_OK = True
-    _JAX_BACKEND = jax.default_backend()
-except Exception as _e:
-    _JAX_OK = False
-    _JAX_BACKEND = "numpy"
-
-if _JAX_OK:
-    @jax.jit
-    def _lif_step(V, tL, drive, sim_t, noise):
-        not_ref = (sim_t - tL) >= 3.0
-        dV = (-(V - (-70.0)) / 20.0 + drive) * 0.5 + noise
-        V2 = jnp.where(not_ref, V + dV, -75.0)
-        sp = V2 >= -55.0
-        V2 = jnp.where(sp, -75.0, V2)
-        tL2 = jnp.where(sp, sim_t, tL)
-        return V2, tL2, sp
-else:
-    def _lif_step(V, tL, drive, sim_t, noise):
-        not_ref = (sim_t - tL) >= 3.0
-        dV = (-(V - (-70.0)) / 20.0 + drive) * 0.5 + noise
-        V2 = _np.where(not_ref, V + dV, -75.0)
-        sp = V2 >= -55.0
-        V2 = _np.where(sp, -75.0, V2)
-        tL2 = _np.where(sp, sim_t, tL)
-        return V2, tL2, sp
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, jsonify, request, Response
@@ -566,8 +536,6 @@ class Brain9:
         # ── Lock + threads
         self._lock = threading.Lock()
         self._last_grow = time.time()
-        self._jax_ready = False
-        self._init_jax_arrays()
         self._last_learn = time.time()
         self._last_kg_save = time.time()
         self._last_meta_check = time.time()
@@ -614,40 +582,6 @@ class Brain9:
 
         self.stats["syn"] = len(self.synapses)
 
-    def _init_jax_arrays(self):
-        n = len(self.neurons)
-        if n == 0:
-            return
-        V  = _np.array([x.v     for x in self.neurons], dtype=_np.float32)
-        tL = _np.array([x.tL    for x in self.neurons], dtype=_np.float32)
-        dr = _np.array([x.drive for x in self.neurons], dtype=_np.float32)
-        if _JAX_OK:
-            self._jV  = jnp.array(V)
-            self._jtL = jnp.array(tL)
-            self._jdr = jnp.array(dr)
-        else:
-            self._jV, self._jtL, self._jdr = V, tL, dr
-        self._jax_n     = n
-        self._jax_ready = True
-        print(f"[JAX] Arrays init: {n} neurones — backend={_JAX_BACKEND}")
-
-    def _extend_jax_arrays(self, new_ns):
-        if not self._jax_ready:
-            self._init_jax_arrays()
-            return
-        V  = _np.array([x.v     for x in new_ns], dtype=_np.float32)
-        tL = _np.array([x.tL    for x in new_ns], dtype=_np.float32)
-        dr = _np.array([x.drive for x in new_ns], dtype=_np.float32)
-        if _JAX_OK:
-            self._jV  = jnp.concatenate([self._jV,  jnp.array(V)])
-            self._jtL = jnp.concatenate([self._jtL, jnp.array(tL)])
-            self._jdr = jnp.concatenate([self._jdr, jnp.array(dr)])
-        else:
-            self._jV  = _np.concatenate([self._jV,  V])
-            self._jtL = _np.concatenate([self._jtL, tL])
-            self._jdr = _np.concatenate([self._jdr, dr])
-        self._jax_n = len(self.neurons)
-
     # ── Boucle de simulation LIF ──────────────────────────────────────────────
 
     def _sim_loop(self):
@@ -667,39 +601,33 @@ class Brain9:
                         still.append((at, tgt, w))
                 self.pending = still
 
-                # Dynamique neuronale — vectorisee JAX/NumPy
+                # Dynamique neuronale
                 new_sigs = []
-                if self._jax_ready and self._jax_n == len(self.neurons):
-                    noise = _np.random.normal(0, 0.35, self._jax_n).astype(_np.float32)
-                    if _JAX_OK:
-                        noise = jnp.array(noise)
-                    V2, tL2, sp2 = _lif_step(
-                        self._jV, self._jtL, self._jdr,
-                        float(self.sim_t), noise
-                    )
-                    self._jV  = V2
-                    self._jtL = tL2
-                    if _JAX_OK:
-                        V_np  = _np.array(V2)
-                        tL_np = _np.array(tL2)
-                        sp_np = _np.array(sp2)
-                    else:
-                        V_np, tL_np, sp_np = V2, tL2, sp2
-                    for i, n in enumerate(self.neurons):
-                        n.v  = float(V_np[i])
-                        n.tL = float(tL_np[i])
-                        n.sp = bool(sp_np[i])
+                for mod in self.modules.values():
+                    ms = 0
+                    for n in mod.neurons:
+                        n.sp = False
+                        if (self.sim_t - n.tL) < T_REFRAC:
+                            n.v = VZ
+                            n.glow *= 0.82
+                            continue
+                        n.v += (-(n.v - VR) / TAU_M + n.drive) * DT
+                        n.v += random.gauss(0, 0.35)
                         n.vn = max(0.0, min(1.0, (n.v - VR) / (VT - VR)))
-                        if n.sp:
+                        if n.v >= VT:
+                            n.sp = True
+                            n.tL = self.sim_t
                             n.last_spike = self.sim_t
+                            n.v = VZ
                             n.glow = 1.0
-                            n.fc  += 1
-                            spk   += 1
-                            self.modules[n.mod].acc += 1
+                            n.fc += 1
+                            spk += 1
+                            ms += 1
                             for (tgt, w, delay, syn) in self.adj.get(n.id, []):
                                 if len(self.pending) < 3000:
                                     self.pending.append((self.sim_t + delay, tgt, w))
                                     syn.elig = 0.9 * syn.elig + 0.1
+                            # Signaux animés (limités pour perf)
                             conns = self.adj.get(n.id, [])
                             if conns and len(new_sigs) < 80:
                                 tgt2 = random.choice(conns)[0]
@@ -710,42 +638,7 @@ class Brain9:
                                     })
                         else:
                             n.glow = max(0.0, n.glow * 0.91)
-                else:
-                    for mod in self.modules.values():
-                        ms = 0
-                        for n in mod.neurons:
-                            n.sp = False
-                            if (self.sim_t - n.tL) < T_REFRAC:
-                                n.v = VZ
-                                n.glow *= 0.82
-                                continue
-                            n.v += (-(n.v - VR) / TAU_M + n.drive) * DT
-                            n.v += random.gauss(0, 0.35)
-                            n.vn = max(0.0, min(1.0, (n.v - VR) / (VT - VR)))
-                            if n.v >= VT:
-                                n.sp = True
-                                n.tL = self.sim_t
-                                n.last_spike = self.sim_t
-                                n.v = VZ
-                                n.glow = 1.0
-                                n.fc += 1
-                                spk += 1
-                                ms += 1
-                                for (tgt, w, delay, syn) in self.adj.get(n.id, []):
-                                    if len(self.pending) < 3000:
-                                        self.pending.append((self.sim_t + delay, tgt, w))
-                                        syn.elig = 0.9 * syn.elig + 0.1
-                                conns = self.adj.get(n.id, [])
-                                if conns and len(new_sigs) < 80:
-                                    tgt2 = random.choice(conns)[0]
-                                    if tgt2.mod != n.mod:
-                                        new_sigs.append({
-                                            "fm": n.mod, "tm": tgt2.mod,
-                                            "p": 0.0, "c": self.modules[n.mod].color
-                                        })
-                            else:
-                                n.glow = max(0.0, n.glow * 0.91)
-                        mod.acc += ms
+                    mod.acc += ms
 
                 # Trace oscilloscope
                 if self.sim_t >= trace_tick:
@@ -1628,20 +1521,15 @@ def api_resonance():
         BRAIN._resonance_burst(a, b)
     return jsonify({"ok": True, "a": a, "b": b})
 
-# ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/api/query", methods=["POST"])
 def api_query():
-    """Requete semantique - l agent pose une question, le cerveau repond."""
     data = request.get_json() or {}
     question = data.get("question", "").lower().strip()
     top_n = int(data.get("top", 10))
     if not question:
         return jsonify({"ok": False, "error": "no question"})
-
     words = question.replace("?","").replace(",","").split()
-
-    # Chercher concepts pertinents dans le KG
     scores = {}
     for concept, info in BRAIN.kg.nodes.items():
         score = 0.0
@@ -1650,53 +1538,24 @@ def api_query():
             if len(word) > 3 and word in c_lower:
                 score += 1.0 + info.get("mastery", 0)
         if score > 0:
-            scores[concept] = {
-                "score":   round(score, 3),
-                "module":  info.get("module", "?"),
-                "mastery": round(info.get("mastery", 0), 3),
-                "times":   info.get("times", 0),
-            }
-
-    # Trier par score
+            scores[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3), "times": info.get("times",0)}
     ranked = sorted(scores.items(), key=lambda x: x[1]["score"], reverse=True)[:top_n]
-
-    # Modules les plus actifs sur le sujet
     module_scores = {}
     for _, info in ranked:
         m = info["module"]
         module_scores[m] = module_scores.get(m, 0) + info["score"]
     best_modules = sorted(module_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-
-    # Stats globales du cerveau
-    brain_stats = {
-        "N": BRAIN.stats["N"],
-        "hz": BRAIN.stats["hz"],
-        "kg_total": len(BRAIN.kg.nodes),
-        "topics_learned": BRAIN.stats["topics_learned"],
-    }
-
-    return jsonify({
-        "ok": True,
-        "question": question,
-        "concepts_found": len(ranked),
-        "top_concepts": [{"concept": k, **v} for k, v in ranked],
-        "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules],
-        "brain": brain_stats,
-    })
+    return jsonify({"ok": True, "question": question, "concepts_found": len(ranked), "top_concepts": [{"concept": k, **v} for k, v in ranked], "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules], "brain": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes)}})
 
 
 @app.route("/api/think", methods=["POST"])
 def api_think():
-    """Le cerveau reflechit sur un probleme et prepare un contexte pour l agent."""
     data = request.get_json() or {}
     task = data.get("task", "").lower().strip()
     context = data.get("context", "")
     if not task:
         return jsonify({"ok": False, "error": "no task"})
-
     words = (task + " " + context).replace("?","").replace(",","").split()
-
-    # Concepts pertinents
     scores = {}
     for concept, info in BRAIN.kg.nodes.items():
         score = 0.0
@@ -1705,60 +1564,31 @@ def api_think():
             if len(word) > 3 and word in c_lower:
                 score += 1.0 + info.get("mastery", 0)
         if score > 0:
-            scores[concept] = {
-                "score":   round(score, 3),
-                "module":  info.get("module", "?"),
-                "mastery": round(info.get("mastery", 0), 3),
-            }
-
+            scores[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3)}
     ranked = sorted(scores.items(), key=lambda x: x[1]["score"], reverse=True)[:15]
-
-    # Modules actifs
     module_scores = {}
     for _, info in ranked:
         m = info["module"]
         module_scores[m] = module_scores.get(m, 0) + info["score"]
     best_modules = sorted(module_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-
-    # Declencher une resonance sur les 2 meilleurs modules
     if len(best_modules) >= 2:
         with BRAIN._lock:
             BRAIN._resonance_burst(best_modules[0][0], best_modules[1][0])
-
-    # Niveau de confiance global
     avg_mastery = sum(v["mastery"] for _,v in ranked) / max(1, len(ranked))
     confidence = "high" if avg_mastery > 0.7 else "medium" if avg_mastery > 0.3 else "low"
-
-    return jsonify({
-        "ok": True,
-        "task": task,
-        "confidence": confidence,
-        "avg_mastery": round(avg_mastery, 3),
-        "concepts": [{"concept": k, **v} for k, v in ranked],
-        "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules],
-        "brain_state": {
-            "N": BRAIN.stats["N"],
-            "hz": BRAIN.stats["hz"],
-            "kg_total": len(BRAIN.kg.nodes),
-            "resonance_events": BRAIN.stats["resonance_events"],
-        },
-        "suggestion": f"Focus sur le module {best_modules[0][0] if best_modules else 'mathematics'}"
-    })
+    return jsonify({"ok": True, "task": task, "confidence": confidence, "avg_mastery": round(avg_mastery,3), "concepts": [{"concept": k, **v} for k, v in ranked], "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules], "brain_state": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes), "resonance_events": BRAIN.stats["resonance_events"]}, "suggestion": f"Focus sur le module {best_modules[0][0] if best_modules else 'mathematics'}"})
 
 
 @app.route("/api/feedback", methods=["POST"])
 def api_feedback():
-    """L agent donne un feedback sur une tache - le cerveau renforce ou affaiblit."""
     data = request.get_json() or {}
-    task    = data.get("task", "").strip()
+    task = data.get("task", "").strip()
     success = data.get("success", True)
     concepts_used = data.get("concepts_used", [])
     if not task:
         return jsonify({"ok": False, "error": "no task"})
-
     reinforced = []
-    weakened   = []
-
+    weakened = []
     with BRAIN._lock:
         for concept in concepts_used:
             key = concept.replace(" ", "_").lower()
@@ -1767,14 +1597,10 @@ def api_feedback():
                     BRAIN.kg.reinforce(key, 0.05)
                     reinforced.append(key)
                 else:
-                    # Affaiblir legerement
-                    node = BRAIN.kg.nodes[key]
-                    node["mastery"] = max(0.0, node["mastery"] - 0.02)
+                    BRAIN.kg.nodes[key]["mastery"] = max(0.0, BRAIN.kg.nodes[key]["mastery"] - 0.02)
                     weakened.append(key)
         BRAIN.kg.save()
-
-    # Si succes, declencher une avalanche pour consolider
-    if success and BRAIN.modules:
+    if success:
         words = task.lower().split()
         best_mod = "mathematics"
         for word in words:
@@ -1786,65 +1612,33 @@ def api_feedback():
             mod = BRAIN.modules.get(best_mod)
             if mod:
                 BRAIN._trigger_avalanche(mod)
-
-    return jsonify({
-        "ok": True,
-        "success": success,
-        "reinforced": reinforced,
-        "weakened": weakened,
-        "msg": f"{'Renforcement' if success else 'Affaiblissement'} de {len(reinforced or weakened)} concepts"
-    })
+    return jsonify({"ok": True, "success": success, "reinforced": reinforced, "weakened": weakened, "msg": f"{'Renforcement' if success else 'Affaiblissement'} de {len(reinforced or weakened)} concepts"})
 
 
 @app.route("/api/context", methods=["POST"])
 def api_context():
-    """L agent envoie son contexte complet, le cerveau retourne tout ce qu il sait."""
     data = request.get_json() or {}
     agent_context = data.get("context", "")
-    task          = data.get("task", "")
-    history       = data.get("history", [])
-
-    # Combiner tout le contexte
+    task = data.get("task", "")
+    history = data.get("history", [])
     full_text = (agent_context + " " + task + " " + " ".join(history)).lower()
-    words     = [w for w in full_text.split() if len(w) > 3]
-    words     = list(set(words))[:50]
-
-    # Scan complet du KG
+    words = list(set([w for w in full_text.split() if len(w) > 3]))[:50]
     results = {}
     for concept, info in BRAIN.kg.nodes.items():
         c_lower = concept.lower().replace("_", " ")
-        score   = sum(1.0 + info.get("mastery",0) for w in words if w in c_lower)
+        score = sum(1.0 + info.get("mastery",0) for w in words if w in c_lower)
         if score > 0:
-            results[concept] = {
-                "score":   round(score, 3),
-                "module":  info.get("module", "?"),
-                "mastery": round(info.get("mastery", 0), 3),
-                "times":   info.get("times", 0),
-            }
-
+            results[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3), "times": info.get("times",0)}
     ranked = sorted(results.items(), key=lambda x: x[1]["score"], reverse=True)[:20]
-
-    # Co-activations : quels concepts vont ensemble
+    top_concepts = [k for k,_ in ranked[:5]]
     coactivations = []
-    top_concepts  = [k for k,_ in ranked[:5]]
     for (a, b), weight in BRAIN.kg.edges.items():
         if a in top_concepts or b in top_concepts:
-            coactivations.append({"a": a, "b": b, "weight": round(weight, 3)})
+            coactivations.append({"a": a, "b": b, "weight": round(weight,3)})
     coactivations = sorted(coactivations, key=lambda x: x["weight"], reverse=True)[:10]
+    return jsonify({"ok": True, "concepts_found": len(ranked), "knowledge": [{"concept": k, **v} for k, v in ranked], "coactivations": coactivations, "brain_state": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes), "stdp": BRAIN.stats["stdp"]}})
 
-    return jsonify({
-        "ok": True,
-        "concepts_found": len(ranked),
-        "knowledge": [{"concept": k, **v} for k, v in ranked],
-        "coactivations": coactivations,
-        "brain_state": {
-            "N":       BRAIN.stats["N"],
-            "hz":      BRAIN.stats["hz"],
-            "kg_total": len(BRAIN.kg.nodes),
-            "stdp":    BRAIN.stats["stdp"],
-        }
-    })
-
+# ─────────────────────────────────────────────────────────────────────────────
 # §11  MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1853,10 +1647,9 @@ BRAIN: Brain9 | None = None
 import signal as _signal
 
 def _shutdown_handler(signum, frame):
-    print("[Brain v9] Signal arret recu - sauvegarde...")
+    print("[Brain v9] Sauvegarde avant arret...")
     if BRAIN:
         BRAIN._do_save()
-        print("[Brain v9] Sauvegarde complete - arret.")
     import sys; sys.exit(0)
 
 _signal.signal(_signal.SIGTERM, _shutdown_handler)
