@@ -189,7 +189,7 @@ STDP_LR     = 0.025
 STDP_WIN    = 20.0
 W_DECAY     = 0.0008
 W_MIN, W_MAX = 0.04, 1.0
-MAX_NEURONS  = 50000
+MAX_NEURONS  = 30000  # Assez grand pour charger saves existants
 BASE_GROW_INTERVAL = 5.0
 LEARNING_GROW_BOOST = 14
 RESONANCE_BOOST = 45
@@ -651,19 +651,24 @@ class BrainSpecialized:
             hz_now=self.stats.get("hz",0)
             time.sleep(BASE_GROW_INTERVAL*(3.0 if hz_now>200 else 1.5 if hz_now>100 else 1.0))
             with self._lock:
-                if self.N>=MAX_NEURONS: continue
+                if self.N>=15000: continue  # Plafond Hz stable
                 acts={nm:float(np.mean(self.glow[np.where(self.mod_of[:self.N]==self.mod_idx[nm])[0]])) if np.any(self.mod_of[:self.N]==self.mod_idx[nm]) else 0.0 for nm in self.mod_names}
                 top=max(acts,key=acts.get)
                 for _ in range(random.randint(2,6)): self._add_neuron_locked(top)
-                if self._W_dirty: self._rebuild_csr()
+                # Rebuild CSR sur timer seulement (voir _save_loop)
 
     def _save_loop(self):
         tick=0
+        csr_tick=0
         while True:
             time.sleep(30)
             with self._lock:
-                if self._W_dirty: self._rebuild_csr()
                 self._save_state()
+                # Rebuild CSR toutes les 60s seulement
+                csr_tick+=1
+                if csr_tick>=4 and self._W_dirty:
+                    self._rebuild_csr()
+                    csr_tick=0
             tick+=1
 
     def learn_topic_api(self, topic):

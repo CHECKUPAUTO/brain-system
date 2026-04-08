@@ -331,11 +331,14 @@ class BrainV11:
 
                 # ── PSP du tick precedent
                 if self._psp_buf is not None:
-                    pn = min(len(self._psp_buf), n)
-                    if TORCH_OK:
-                        self._V_gpu[:pn] = self._V_gpu[:pn] + self._psp_buf[:pn].to(torch.float64) * 6.0
-                    else:
-                        self._V_gpu[:pn] = self._V_gpu[:pn] + self._psp_buf[:pn] * 6.0
+                    try:
+                        pn = min(len(self._psp_buf), n, self._gpu_n)
+                        if pn > 0:
+                            if TORCH_OK:
+                                self._V_gpu[:pn] = self._V_gpu[:pn] + self._psp_buf[:pn].to(torch.float64) * 6.0
+                            else:
+                                self._V_gpu[:pn] = self._V_gpu[:pn] + self._psp_buf[:pn] * 6.0
+                    except Exception: pass
                     self._psp_buf = None
 
                 # ── LIF GPU vectorise
