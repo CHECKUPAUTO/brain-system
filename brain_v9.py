@@ -30,7 +30,6 @@ PERSIST_DIR.mkdir(parents=True, exist_ok=True)
 STATE_FILE   = PERSIST_DIR / "brain_v9_state.json"
 KG_FILE      = PERSIST_DIR / "knowledge_graph.json"
 TOPIC_FILE   = PERSIST_DIR / "learned_topics_v9.json"
-NEURONS_FILE = PERSIST_DIR / "neurons_state.json"
 
 def _load_json(path, default):
     try:
@@ -63,6 +62,7 @@ W_MIN, W_MAX = 0.04, 1.0
 
 # Neurogenèse
 BASE_GROW_INTERVAL  = 5.0   # secondes
+MAX_NEURONS         = 5000  # limite neurogenese
 LEARNING_GROW_BOOST = 14    # neurones par article appris
 RESONANCE_BOOST     = 45    # neurones par burst de résonance
 AVALANCHE_THRESH    = 0.82  # activation pour déclencher une avalanche
@@ -503,7 +503,6 @@ class Brain9:
         self.adj: dict[str, list[tuple]] = {}   # nid → [(tgt, w, delay, syn)]
         self._build_neurons()
         self._wire()
-        self._load_neurons_state()
 
         # ── Persistance
         self._state  = _load_json(STATE_FILE, {
@@ -798,6 +797,8 @@ class Brain9:
                             break
 
     def _grow_module(self, mod: Module, count: int, reason: str = ""):
+        if len(self.neurons) >= MAX_NEURONS:
+            return []
         """Ajoute count neurones à un module et les câble."""
         new_ns = mod.add_neurons(count)
         for n in new_ns:
@@ -900,8 +901,6 @@ class Brain9:
     def _do_save(self):
         _save_json(STATE_FILE, {
             "total_neurons": self._total_neurons,
-            "N": len(self.neurons),
-            "syn": len(self.synapses),
             "growth": self._growth,
             "total_spikes": self._total_spikes,
             "resonance_events": self._resonance_events,
@@ -912,54 +911,6 @@ class Brain9:
             }
         })
         self.kg.save()
-        try:
-            nd = {"count": len(self.neurons), "neurons": [
-                {"id": n.id, "mod": n.mod, "exc": n.exc,
-                 "v": round(n.v,3), "tL": round(n.tL,3),
-                 "drive": round(n.drive,4), "fc": n.fc,
-                 "rx": round(n.rx,2), "ry": round(n.ry,2), "rz": round(n.rz,2)}
-                for n in self.neurons]}
-            _save_json(NEURONS_FILE, nd)
-        except Exception as e:
-            print(f"neuron save failed: {e}")
-
-    def _load_neurons_state(self):
-        from pathlib import Path
-        nf = Path("/mnt/nvme/soullink_brain/neurons_state.json")
-        if not nf.exists():
-            return 0
-        try:
-            import json
-            with open(nf) as f:
-                saved = json.load(f)
-        except Exception:
-            return 0
-        if not saved or "neurons" not in saved:
-            return 0
-        restored = 0
-        saved_map = {n["id"]: n for n in saved["neurons"]}
-        for n in self.neurons:
-            if n.id in saved_map:
-                s = saved_map[n.id]
-                n.v = s.get("v", n.v)
-                n.tL = s.get("tL", n.tL)
-                n.drive = s.get("drive", n.drive)
-                n.fc = s.get("fc", n.fc)
-                restored += 1
-        extra = [s for s in saved["neurons"] if s["id"] not in {x.id for x in self.neurons}]
-        for s in extra:
-            mod = self.modules.get(s["mod"])
-            if mod:
-                new_n = mod._new_neuron()
-                new_n.v = s.get("v", new_n.v)
-                new_n.tL = s.get("tL", new_n.tL)
-                new_n.drive = s.get("drive", new_n.drive)
-                new_n.fc = s.get("fc", new_n.fc)
-                self.neurons.append(new_n)
-                self.adj[new_n.id] = []
-                restored += 1
-        print(f"[Persist] {restored} neurones restaures")
-        return restored
 
     # ── API export ────────────────────────────────────────────────────────────
 
@@ -1033,7 +984,6 @@ class Brain9:
             self._grow_module(mod, n_new, f"api:{topic}")
             self.kg.add_concept(topic.replace(" ", "_"), best_mod, 2.0)
             self.kg.reinforce(topic.replace(" ", "_"), 0.08)
-            self.kg.save()
         return {"ok": True, "topic": topic, "module": best_mod, "new_neurons": n_new}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1521,138 +1471,68 @@ def api_resonance():
         BRAIN._resonance_burst(a, b)
     return jsonify({"ok": True, "a": a, "b": b})
 
-
-@app.route("/api/query", methods=["POST"])
-def api_query():
-    data = request.get_json() or {}
-    question = data.get("question", "").lower().strip()
-    top_n = int(data.get("top", 10))
-    if not question:
-        return jsonify({"ok": False, "error": "no question"})
-    words = question.replace("?","").replace(",","").split()
-    scores = {}
-    for concept, info in BRAIN.kg.nodes.items():
-        score = 0.0
-        c_lower = concept.lower().replace("_", " ")
-        for word in words:
-            if len(word) > 3 and word in c_lower:
-                score += 1.0 + info.get("mastery", 0)
-        if score > 0:
-            scores[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3), "times": info.get("times",0)}
-    ranked = sorted(scores.items(), key=lambda x: x[1]["score"], reverse=True)[:top_n]
-    module_scores = {}
-    for _, info in ranked:
-        m = info["module"]
-        module_scores[m] = module_scores.get(m, 0) + info["score"]
-    best_modules = sorted(module_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-    return jsonify({"ok": True, "question": question, "concepts_found": len(ranked), "top_concepts": [{"concept": k, **v} for k, v in ranked], "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules], "brain": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes)}})
-
-
-@app.route("/api/think", methods=["POST"])
-def api_think():
-    data = request.get_json() or {}
-    task = data.get("task", "").lower().strip()
-    context = data.get("context", "")
-    if not task:
-        return jsonify({"ok": False, "error": "no task"})
-    words = (task + " " + context).replace("?","").replace(",","").split()
-    scores = {}
-    for concept, info in BRAIN.kg.nodes.items():
-        score = 0.0
-        c_lower = concept.lower().replace("_", " ")
-        for word in words:
-            if len(word) > 3 and word in c_lower:
-                score += 1.0 + info.get("mastery", 0)
-        if score > 0:
-            scores[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3)}
-    ranked = sorted(scores.items(), key=lambda x: x[1]["score"], reverse=True)[:15]
-    module_scores = {}
-    for _, info in ranked:
-        m = info["module"]
-        module_scores[m] = module_scores.get(m, 0) + info["score"]
-    best_modules = sorted(module_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-    if len(best_modules) >= 2:
-        with BRAIN._lock:
-            BRAIN._resonance_burst(best_modules[0][0], best_modules[1][0])
-    avg_mastery = sum(v["mastery"] for _,v in ranked) / max(1, len(ranked))
-    confidence = "high" if avg_mastery > 0.7 else "medium" if avg_mastery > 0.3 else "low"
-    return jsonify({"ok": True, "task": task, "confidence": confidence, "avg_mastery": round(avg_mastery,3), "concepts": [{"concept": k, **v} for k, v in ranked], "best_modules": [{"module": m, "score": round(s,2)} for m,s in best_modules], "brain_state": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes), "resonance_events": BRAIN.stats["resonance_events"]}, "suggestion": f"Focus sur le module {best_modules[0][0] if best_modules else 'mathematics'}"})
-
-
-@app.route("/api/feedback", methods=["POST"])
-def api_feedback():
-    data = request.get_json() or {}
-    task = data.get("task", "").strip()
-    success = data.get("success", True)
-    concepts_used = data.get("concepts_used", [])
-    if not task:
-        return jsonify({"ok": False, "error": "no task"})
-    reinforced = []
-    weakened = []
-    with BRAIN._lock:
-        for concept in concepts_used:
-            key = concept.replace(" ", "_").lower()
-            if key in BRAIN.kg.nodes:
-                if success:
-                    BRAIN.kg.reinforce(key, 0.05)
-                    reinforced.append(key)
-                else:
-                    BRAIN.kg.nodes[key]["mastery"] = max(0.0, BRAIN.kg.nodes[key]["mastery"] - 0.02)
-                    weakened.append(key)
-        BRAIN.kg.save()
-    if success:
-        words = task.lower().split()
-        best_mod = "mathematics"
-        for word in words:
-            for mod_name in BRAIN.modules:
-                if word in mod_name:
-                    best_mod = mod_name
-                    break
-        with BRAIN._lock:
-            mod = BRAIN.modules.get(best_mod)
-            if mod:
-                BRAIN._trigger_avalanche(mod)
-    return jsonify({"ok": True, "success": success, "reinforced": reinforced, "weakened": weakened, "msg": f"{'Renforcement' if success else 'Affaiblissement'} de {len(reinforced or weakened)} concepts"})
-
-
-@app.route("/api/context", methods=["POST"])
-def api_context():
-    data = request.get_json() or {}
-    agent_context = data.get("context", "")
-    task = data.get("task", "")
-    history = data.get("history", [])
-    full_text = (agent_context + " " + task + " " + " ".join(history)).lower()
-    words = list(set([w for w in full_text.split() if len(w) > 3]))[:50]
-    results = {}
-    for concept, info in BRAIN.kg.nodes.items():
-        c_lower = concept.lower().replace("_", " ")
-        score = sum(1.0 + info.get("mastery",0) for w in words if w in c_lower)
-        if score > 0:
-            results[concept] = {"score": round(score,3), "module": info.get("module","?"), "mastery": round(info.get("mastery",0),3), "times": info.get("times",0)}
-    ranked = sorted(results.items(), key=lambda x: x[1]["score"], reverse=True)[:20]
-    top_concepts = [k for k,_ in ranked[:5]]
-    coactivations = []
-    for (a, b), weight in BRAIN.kg.edges.items():
-        if a in top_concepts or b in top_concepts:
-            coactivations.append({"a": a, "b": b, "weight": round(weight,3)})
-    coactivations = sorted(coactivations, key=lambda x: x["weight"], reverse=True)[:10]
-    return jsonify({"ok": True, "concepts_found": len(ranked), "knowledge": [{"concept": k, **v} for k, v in ranked], "coactivations": coactivations, "brain_state": {"N": BRAIN.stats["N"], "hz": BRAIN.stats["hz"], "kg_total": len(BRAIN.kg.nodes), "stdp": BRAIN.stats["stdp"]}})
-
 # ─────────────────────────────────────────────────────────────────────────────
 # §11  MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+# ── Blockchain locale ──────────────────────────────────────────────────────
+class BrainChain:
+    FILE = "/mnt/nvme/soullink_brain/brain_chain.jsonl"
+    def __init__(self):
+        self.last = {}
+        try:
+            with open(self.FILE) as f:
+                lines = [l for l in f if l.strip()]
+            if lines:
+                self.last = json.loads(lines[-1])
+        except Exception:
+            pass
+    def _hash(self, b):
+        return hashlib.sha256(json.dumps(b, sort_keys=True, separators=(",",":")).encode()).hexdigest()
+    def add(self, N, kg, hz, stdp, growth):
+        block = {"i": self.last.get("i",-1)+1, "ts": time.time(),
+                 "prev": self.last.get("hash","0"*64),
+                 "d": {"N":N,"kg":kg,"hz":round(hz,1),"stdp":stdp,"growth":growth}}
+        block["hash"] = self._hash(block)
+        self.last = block
+        try:
+            with open(self.FILE, "a") as f:
+                f.write(json.dumps(block, separators=(",",":")) + chr(10))
+        except Exception as e:
+            print(f"[Chain] {e}")
+        return block
+    def verify(self):
+        try:
+            with open(self.FILE) as f:
+                blocks = [json.loads(l) for l in f if l.strip()]
+        except Exception as e:
+            return False, str(e)
+        for i, b in enumerate(blocks):
+            h = b.pop("hash"); c = self._hash(b); b["hash"] = h
+            if h != c: return False, f"Bloc {i} corrompu"
+            if i > 0 and b["prev"] != blocks[i-1]["hash"]: return False, f"Bloc {i} chaine rompue"
+        return True, blocks
+    def stats(self):
+        try:
+            with open(self.FILE) as f: n = sum(1 for l in f if l.strip())
+        except Exception: n = 0
+        h = self.last.get("hash",""); ts = self.last.get("ts",0)
+        return {"blocks":n,"last_hash":h[:16]+"..." if h else "","last_ts":time.strftime("%H:%M:%S",time.gmtime(ts)) if ts else ""}
+
 BRAIN: Brain9 | None = None
+_CHAIN = BrainChain()
 
-import signal as _signal
+@app.route("/api/chain")
+def api_chain():
+    valid, result = _CHAIN.verify()
+    return jsonify({"ok":True,"valid":valid,"stats":_CHAIN.stats(),"last_block":_CHAIN.last,"error":result if not valid else None})
 
-def _shutdown_handler(signum, frame):
-    print("[Brain v9] Sauvegarde avant arret...")
-    if BRAIN:
-        BRAIN._do_save()
-    import sys; sys.exit(0)
-
-_signal.signal(_signal.SIGTERM, _shutdown_handler)
+@app.route("/api/chain/verify")
+def api_chain_verify():
+    valid, result = _CHAIN.verify()
+    return jsonify({"ok":True,"valid":valid,"blocks":len(result) if valid else 0,"error":None if valid else result})
+_CHAIN = BrainChain()
 
 if __name__ == "__main__":
     import argparse
