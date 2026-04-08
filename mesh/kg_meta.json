@@ -2,45 +2,570 @@
   "nodes": {
     "machine_learning": {
       "module": "learning",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 77,
       "complexity": 2.0,
       "first_seen": 1775661154.5805502
     },
     "meta-learning": {
       "module": "learning",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 77,
       "complexity": 2.0,
       "first_seen": 1775661186.7650113
     },
     "transfer_learning": {
       "module": "learning",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 76,
       "complexity": 2.0,
       "first_seen": 1775661226.9633963
     },
     "reinforcement_learning": {
       "module": "learning",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 76,
       "complexity": 2.0,
       "first_seen": 1775661259.132228
     },
     "neural_network": {
       "module": "neuroscience",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 76,
       "complexity": 2.0,
       "first_seen": 1775661283.2700224
     },
     "cognitive_bias": {
       "module": "philosophy",
-      "mastery": 0.05,
-      "times": 1,
+      "mastery": 1.0,
+      "times": 76,
       "complexity": 2.0,
       "first_seen": 1775661307.3898501
+    },
+    "game_theory": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 74,
+      "complexity": 2.0,
+      "first_seen": 1775661339.6421955
+    },
+    "evolutionary_algorithm": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 73,
+      "complexity": 2.0,
+      "first_seen": 1775661371.8916283
+    },
+    "self-supervised_learning": {
+      "module": "learning",
+      "mastery": 1.0,
+      "times": 73,
+      "complexity": 2.0,
+      "first_seen": 1775661404.0542154
+    },
+    "active_learning": {
+      "module": "learning",
+      "mastery": 1.0,
+      "times": 73,
+      "complexity": 2.0,
+      "first_seen": 1775661436.2922027
+    },
+    "euler's_formula": {
+      "complexity": 2.0,
+      "first_seen": 1775649919.9960358,
+      "mastery": 0.65,
+      "module": "mathematics",
+      "times": 13
+    },
+    "fourier_transform": {
+      "complexity": 2.0,
+      "first_seen": 1775649960.245172,
+      "mastery": 1.0,
+      "module": "calculus",
+      "times": 20
+    },
+    "linear_algebra": {
+      "complexity": 2.0,
+      "first_seen": 1775650000.487198,
+      "mastery": 1.0,
+      "module": "algebra",
+      "times": 20
+    },
+    "prime_numbers": {
+      "complexity": 2.0,
+      "first_seen": 1775650048.795953,
+      "mastery": 0.5499999999999999,
+      "module": "mathematics",
+      "times": 11
+    },
+    "riemann_hypothesis": {
+      "complexity": 2.0,
+      "first_seen": 1775650089.1683168,
+      "mastery": 1.0,
+      "module": "mathematics",
+      "times": 20
+    },
+    "calculus": {
+      "complexity": 2.0,
+      "first_seen": 1775650121.7794368,
+      "mastery": 0.5499999999999999,
+      "module": "calculus",
+      "times": 11
+    },
+    "group_theory": {
+      "complexity": 2.0,
+      "first_seen": 1775650162.2043884,
+      "mastery": 0.5499999999999999,
+      "module": "algebra",
+      "times": 11
+    },
+    "entropy": {
+      "complexity": 2.0,
+      "first_seen": 1775650194.446221,
+      "mastery": 1.0,
+      "module": "information",
+      "times": 20
+    },
+    "turing_completeness": {
+      "complexity": 2.0,
+      "first_seen": 1775650226.6590652,
+      "mastery": 0.49999999999999994,
+      "module": "computation",
+      "times": 10
+    },
+    "quantum_mechanics": {
+      "complexity": 2.0,
+      "first_seen": 1775650274.9057815,
+      "mastery": 1.0,
+      "module": "physics",
+      "times": 20
+    },
+    "topology": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661191.661883
+    },
+    "bayesian_inference": {
+      "complexity": 2.0,
+      "first_seen": 1775650339.623058,
+      "mastery": 1.0,
+      "module": "statistics",
+      "times": 20
+    },
+    "kolmogorov_complexity": {
+      "complexity": 2.0,
+      "first_seen": 1775650388.166796,
+      "mastery": 0.49999999999999994,
+      "module": "information",
+      "times": 10
+    },
+    "category_theory": {
+      "module": "algebra",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661241.9829507
+    },
+    "mandelbrot_set": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661328.8463664
+    },
+    "navier-stokes": {
+      "complexity": 2.0,
+      "first_seen": 1775650485.0730824,
+      "mastery": 1.0,
+      "module": "physics",
+      "times": 20
+    },
+    "godel_theorems": {
+      "complexity": 2.0,
+      "first_seen": 1775650525.4195402,
+      "mastery": 0.49999999999999994,
+      "module": "logic",
+      "times": 10
+    },
+    "neural_network_math": {
+      "complexity": 2.0,
+      "first_seen": 1775650565.732358,
+      "mastery": 0.44999999999999996,
+      "module": "neuroscience",
+      "times": 9
+    },
+    "p_vs_np": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661282.1965954
+    },
+    "chaos_theory": {
+      "complexity": 2.0,
+      "first_seen": 1775650654.5909567,
+      "mastery": 1.0,
+      "module": "mathematics",
+      "times": 20
+    },
+    "graph_theory": {
+      "complexity": 2.0,
+      "first_seen": 1775650694.9325254,
+      "mastery": 1.0,
+      "module": "computation",
+      "times": 20
+    },
+    "differential_geometry": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661385.2724128
+    },
+    "stochastic_process": {
+      "complexity": 2.0,
+      "first_seen": 1775650767.7136092,
+      "mastery": 0.44999999999999996,
+      "module": "statistics",
+      "times": 9
+    },
+    "automata_theory": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661419.1271117
+    },
+    "lambda_calculus": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661314.3987074
+    },
+    "tensor_calculus": {
+      "complexity": 2.0,
+      "first_seen": 1775651811.2736967,
+      "mastery": 0.39999999999999997,
+      "module": "calculus",
+      "times": 8
+    },
+    "algebraic_topology": {
+      "complexity": 2.0,
+      "first_seen": 1775651851.6370606,
+      "mastery": 0.39999999999999997,
+      "module": "algebra",
+      "times": 8
+    },
+    "information_geometry": {
+      "complexity": 2.0,
+      "first_seen": 1775651883.999427,
+      "mastery": 0.39999999999999997,
+      "module": "information",
+      "times": 8
+    },
+    "statistical_mechanics": {
+      "complexity": 2.0,
+      "first_seen": 1775651916.3345382,
+      "mastery": 1.0,
+      "module": "physics",
+      "times": 20
+    },
+    "neuroplasticity": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661142.210416
+    },
+    "consciousness": {
+      "module": "philosophy",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661166.4552019
+    },
+    "neural_oscillation": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661198.6487515
+    },
+    "hebbian_learning": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661222.866782
+    },
+    "working_memory": {
+      "module": "memory",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661263.1023686
+    },
+    "attention": {
+      "module": "attention",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661295.2531703
+    },
+    "language_acquisition": {
+      "module": "language",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661335.5292
+    },
+    "cognitive_science": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661367.6899495
+    },
+    "self-organization": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661399.8821468
+    },
+    "emergent_behavior": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661432.0667841
+    },
+    "algorithms": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661145.249476
+    },
+    "gradient_descent": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661169.400838
+    },
+    "formal_logic": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661209.6584468
+    },
+    "convex_optimization": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661346.6281302
+    },
+    "information_theory": {
+      "module": "information",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661386.942894
+    },
+    "type_theory": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661451.2900727
+    },
+    "bitcoin": {
+      "module": "blockchain_tech",
+      "mastery": 1.0,
+      "times": 19,
+      "complexity": 2.0,
+      "first_seen": 1775661156.386229
+    },
+    "ethereum": {
+      "module": "blockchain_tech",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661196.6533842
+    },
+    "crypto_global_market": {
+      "module": "markets",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661204.7604742
+    },
+    "fear_greed_17": {
+      "module": "sentiment",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661212.8271337
+    },
+    "blockchain": {
+      "module": "blockchain_tech",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661236.977214
+    },
+    "cryptography": {
+      "module": "cryptography",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661261.2187428
+    },
+    "bitcoin_data": {
+      "module": "blockchain_tech",
+      "mastery": 1.0,
+      "times": 19,
+      "complexity": 2.0,
+      "first_seen": 1775661277.421011
+    },
+    "smart_contract": {
+      "module": "defi",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661293.4673212
+    },
+    "decentralized_finance": {
+      "module": "defi",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661333.8293417
+    },
+    "technical_analysis": {
+      "module": "trading",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661357.968568
+    },
+    "ethereum_data": {
+      "module": "blockchain_tech",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661366.0310614
+    },
+    "market_microstructure": {
+      "module": "markets",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661390.2765684
+    },
+    "risk_management": {
+      "module": "risk",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661422.582031
+    },
+    "proof_of_work": {
+      "module": "consensus",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661454.7518878
+    },
+    "proof_of_stake": {
+      "module": "consensus",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661486.9486768
+    },
+    "fractal": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661159.500907
+    },
+    "symmetry": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661232.1325817
+    },
+    "music_theory": {
+      "module": "audio",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661264.473403
+    },
+    "visual_perception": {
+      "module": "vision",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661288.4995413
+    },
+    "complex_systems": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661353.112966
+    },
+    "information_aesthetics": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661425.477043
+    },
+    "generative_art": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661449.6002192
+    },
+    "volatility": {
+      "module": "risk",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661535.2421641
+    },
+    "derivatives": {
+      "module": "derivatives",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661559.4041753
+    },
+    "algorithmic_trading": {
+      "module": "trading",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661607.7703996
+    },
+    "sentiment_analysis": {
+      "module": "sentiment",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661631.8973796
     }
   },
   "edges": {}

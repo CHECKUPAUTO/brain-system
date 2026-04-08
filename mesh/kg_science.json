@@ -1,75 +1,5 @@
 {
   "nodes": {
-    "fractal": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661159.500907
-    },
-    "topology": {
-      "module": "geometry",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661191.661883
-    },
-    "symmetry": {
-      "module": "geometry",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661232.1325817
-    },
-    "music_theory": {
-      "module": "audio",
-      "mastery": 1.0,
-      "times": 74,
-      "complexity": 2.0,
-      "first_seen": 1775661264.473403
-    },
-    "visual_perception": {
-      "module": "vision",
-      "mastery": 1.0,
-      "times": 73,
-      "complexity": 2.0,
-      "first_seen": 1775661288.4995413
-    },
-    "mandelbrot_set": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 73,
-      "complexity": 2.0,
-      "first_seen": 1775661328.8463664
-    },
-    "complex_systems": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 73,
-      "complexity": 2.0,
-      "first_seen": 1775661353.112966
-    },
-    "differential_geometry": {
-      "module": "geometry",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661385.2724128
-    },
-    "information_aesthetics": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661425.477043
-    },
-    "generative_art": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661449.6002192
-    },
     "euler's_formula": {
       "complexity": 2.0,
       "first_seen": 1775649919.9960358,
@@ -82,14 +12,14 @@
       "first_seen": 1775649960.245172,
       "mastery": 1.0,
       "module": "calculus",
-      "times": 20
+      "times": 31
     },
     "linear_algebra": {
       "complexity": 2.0,
       "first_seen": 1775650000.487198,
       "mastery": 1.0,
       "module": "algebra",
-      "times": 20
+      "times": 30
     },
     "prime_numbers": {
       "complexity": 2.0,
@@ -103,7 +33,7 @@
       "first_seen": 1775650089.1683168,
       "mastery": 1.0,
       "module": "mathematics",
-      "times": 20
+      "times": 29
     },
     "calculus": {
       "complexity": 2.0,
@@ -124,7 +54,7 @@
       "first_seen": 1775650194.446221,
       "mastery": 1.0,
       "module": "information",
-      "times": 20
+      "times": 27
     },
     "turing_completeness": {
       "complexity": 2.0,
@@ -138,14 +68,21 @@
       "first_seen": 1775650274.9057815,
       "mastery": 1.0,
       "module": "physics",
-      "times": 20
+      "times": 28
+    },
+    "topology": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661191.661883
     },
     "bayesian_inference": {
       "complexity": 2.0,
       "first_seen": 1775650339.623058,
       "mastery": 1.0,
       "module": "statistics",
-      "times": 20
+      "times": 26
     },
     "kolmogorov_complexity": {
       "complexity": 2.0,
@@ -161,12 +98,19 @@
       "complexity": 2.0,
       "first_seen": 1775661241.9829507
     },
+    "mandelbrot_set": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661328.8463664
+    },
     "navier-stokes": {
       "complexity": 2.0,
       "first_seen": 1775650485.0730824,
       "mastery": 1.0,
       "module": "physics",
-      "times": 20
+      "times": 28
     },
     "godel_theorems": {
       "complexity": 2.0,
@@ -194,14 +138,21 @@
       "first_seen": 1775650654.5909567,
       "mastery": 1.0,
       "module": "mathematics",
-      "times": 20
+      "times": 25
     },
     "graph_theory": {
       "complexity": 2.0,
       "first_seen": 1775650694.9325254,
       "mastery": 1.0,
       "module": "computation",
-      "times": 20
+      "times": 25
+    },
+    "differential_geometry": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661385.2724128
     },
     "stochastic_process": {
       "complexity": 2.0,
@@ -250,7 +201,7 @@
       "first_seen": 1775651916.3345382,
       "mastery": 1.0,
       "module": "physics",
-      "times": 20
+      "times": 25
     },
     "game_theory": {
       "module": "optimization",
@@ -475,6 +426,55 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661486.9486768
+    },
+    "fractal": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661159.500907
+    },
+    "symmetry": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661232.1325817
+    },
+    "music_theory": {
+      "module": "audio",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661264.473403
+    },
+    "visual_perception": {
+      "module": "vision",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661288.4995413
+    },
+    "complex_systems": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661353.112966
+    },
+    "information_aesthetics": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661425.477043
+    },
+    "generative_art": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775661449.6002192
     },
     "machine_learning": {
       "module": "learning",
