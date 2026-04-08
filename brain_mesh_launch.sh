@@ -5,7 +5,7 @@
 BRAIN_DIR="/mnt/nvme/soullink_brain"
 CONFIG="$BRAIN_DIR/brain_v10_config.py"
 ORCH="$BRAIN_DIR/brain_orchestrator.py"
-LOG_DIR="/mnt/nvme_secondary/openclaw/workspace/logs"
+LOG_DIR="/root/.openclaw/workspace/logs"
 mkdir -p "$LOG_DIR"
 
 BRAINS=("science:9010" "mind:9011" "engineer:9012" "crypto:9013" "creative:9014" "meta:9015")

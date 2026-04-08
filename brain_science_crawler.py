@@ -27,8 +27,8 @@ from pathlib import Path
 # ─── Config ───────────────────────────────────────────────────────────────────
 
 BRAIN_API   = "http://localhost:8084"
-LOG_FILE    = "/mnt/nvme_secondary/openclaw/workspace/science_crawler.log"
-STATE_FILE  = "/mnt/nvme_secondary/openclaw/workspace/crawler_state.json"
+LOG_FILE    = "/root/.openclaw/workspace/science_crawler.log"
+STATE_FILE  = "/root/.openclaw/workspace/crawler_state.json"
 
 # Délais entre requêtes (secondes) — respecter les rate limits
 DELAY_WIKIPEDIA = (20, 40)
