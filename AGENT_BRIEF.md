@@ -26,4 +26,4 @@ Apres chaque tache:
 ## REGLES
 - Ne jamais modifier brain_v10*.py sans validation humaine
 - Ne jamais stopper brain-v10.service
-- Espace de travail: /mnt/nvme_secondary/openclaw/
+- Espace de travail: /root/.openclaw/
