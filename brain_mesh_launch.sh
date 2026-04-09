@@ -69,14 +69,9 @@ status_all() {
 case "${1:-start}" in
     start)
         echo "=== Lancement SoulLink Brain Mesh ==="
-        # Brain-Science déjà actif sur 9010 via systemd, on saute
         for entry in "${BRAINS[@]}"; do
             name="${entry%%:*}"
             port="${entry##*:}"
-            if [ "$name" = "science" ]; then
-                echo "Brain-science déjà actif (brain-v10.service)"
-                continue
-            fi
             # Tuer si déjà en cours
             kill $(lsof -ti:$port) 2>/dev/null
             sleep 1
@@ -95,7 +90,6 @@ case "${1:-start}" in
         for entry in "${BRAINS[@]}"; do
             name="${entry%%:*}"
             port="${entry##*:}"
-            [ "$name" = "science" ] && continue  # géré par systemd
             kill $(lsof -ti:$port) 2>/dev/null && echo "Brain-$name arrete"
         done
         kill $(lsof -ti:$ORCH_PORT) 2>/dev/null && echo "Orchestrateur arrete"

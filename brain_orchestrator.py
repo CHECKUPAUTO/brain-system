@@ -360,25 +360,6 @@ threading.Thread(target=_monitor_loop, daemon=True).start()
 # ── Flask App ─────────────────────────────────────────────────────────────────
 
 app = Flask(__name__)
-
-@app.route("/api/mesh/status")
-def mesh_status():
-    results = _call_parallel("/api/stats", timeout=3)
-    mesh = {}
-    total_N = total_syn = 0
-    for key, r in results.items():
-        if "error" not in r:
-            mesh[key] = {"N":r.get("N",0),"hz":r.get("hz",0),"syn":r.get("syn",0),"kg":r.get("kg_concepts",0),"port":BRAINS[key]["port"],"gpu":r.get("gpu",False)}
-            total_N   += r.get("N",0)
-            total_syn += r.get("syn",0)
-        else:
-            mesh[key] = {"status":"offline","error":r["error"],"port":BRAINS[key]["port"]}
-    try:
-        shared = json.load(open(SHARED_KG))
-        shared_concepts = len(shared.get("nodes",{}))
-    except: shared_concepts = 0
-    return jsonify({"ok":True,"mesh":mesh,"total":{"N":total_N,"syn":total_syn,"brains":len([v for v in mesh.values() if "hz" in v]),"shared_kg":shared_concepts},"ts":time.strftime("%H:%M:%S")})
-
 @app.route("/api/mesh/think", methods=["POST"])
 def mesh_think():
     data    = request.get_json() or {}
@@ -534,12 +515,30 @@ def index():
         ]
     })
 
+@app.route("/api/mesh/mind", methods=["GET", "POST"])
+def mind_proxy_symbiote():
+    import requests
+    from flask import request, jsonify
+    try:
+        r = requests.get("http://127.0.0.1:9021/mind/state", timeout=2).json()
+        if request.method == "POST":
+            q = (request.get_json() or {}).get("question", "")
+            att = r.get("attractors", [{}])[0].get("name", "Inconnu") if r.get("attractors") else "Inconnu"
+            turb = r.get("eye", {}).get("turbulence", 0)
+            meta = r.get("field", {}).get("activations", {}).get("meta", 0)
+            return jsonify({
+                "ok": True, 
+                "source": "Orchestrator_V11_Symbiote",
+                "reponse": f"J'ai bien analysé : '{q}'. Mon subconscient est ancré dans l'attracteur '{att}' avec une turbulence de {turb:.3f}. Le nœud Meta est à {meta:.3f}."
+            })
+        return jsonify(r)
+    except Exception as e:
+        return jsonify({"error": "Lien Thalamo-Cortical rompu", "details": str(e)}), 503
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=9020)
-    args = parser.parse_args()
-    print(f"\nOrchestrator v2 — port {args.port}")
-    print(f"Cerveaux: {list(BRAINS.keys())}")
-    print(f"Auto-spawn: ACTIF — monitor toutes les 5 minutes")
+    p = argparse.ArgumentParser()
+    p.add_argument("--port", type=int, default=9020)
+    args = p.parse_args()
+    print(f"Orchestrateur Symbiotique V11 - Port {args.port}")
     app.run(host="0.0.0.0", port=args.port, threaded=True)
