@@ -516,7 +516,7 @@ class BrainV11:
         while True:
             hz=self.stats.get("hz",0)
             time.sleep(BASE_GROW_INTERVAL*(4.0 if hz>1000 else 3.0 if hz>500 else 2.0 if hz>200 else 1.0))
-            if self.N>=2000: continue  # Palier 2000
+            if self.N>=3000: continue  # Palier 3000
             if TORCH_OK and self._gpu_ready:
                 acts={nm:float(self._gl_gpu[np.where(self._mod_cpu[:self.N]==self.mod_idx[nm])[0]].mean().cpu()) if np.any(self._mod_cpu[:self.N]==self.mod_idx[nm]) else 0.0 for nm in self.mod_names}
             else:

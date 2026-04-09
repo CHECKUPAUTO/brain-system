@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoulLink Brain Mesh v11</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #020408;
+    --grid: rgba(0,255,180,0.03);
+    --c1: #00ffb4;
+    --c2: #ff3e7f;
+    --c3: #7b4fff;
+    --c4: #ffd700;
+    --c5: #00cfff;
+    --c6: #ff6b2b;
+    --dim: rgba(0,255,180,0.12);
+    --text: rgba(0,255,180,0.85);
+    --muted: rgba(0,255,180,0.35);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* Scanlines */
+  body::after {
+    content:'';
+    position:fixed; inset:0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+    );
+    pointer-events:none;
+    z-index:1;
+  }
+
+  #app { position:relative; z-index:2; }
+
+  /* Header */
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--dim);
+    background: rgba(0,255,180,0.02);
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 1.1rem;
+    letter-spacing: 0.2em;
+    color: var(--c1);
+    text-shadow: 0 0 20px var(--c1);
+  }
+
+  .logo span { color: var(--c2); }
+
+  .status-bar {
+    display:flex; gap:20px; font-size:0.7rem; color: var(--muted);
+  }
+
+  .status-bar .live {
+    color: var(--c1);
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink {
+    0%,100%{opacity:1} 50%{opacity:0.3}
+  }
+
+  /* Main layout */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 57px);
+  }
+
+  /* 3D Canvas */
+  #canvas3d {
+    grid-row: 1 / 3;
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid var(--dim);
+  }
+
+  canvas { display:block; width:100%; height:100%; }
+
+  /* Overlay HUD */
+  .hud-overlay {
+    position:absolute; top:16px; left:16px;
+    font-size:0.65rem; color: var(--muted);
+    pointer-events:none;
+  }
+
+  .hud-overlay div { margin:2px 0; }
+  .hud-overlay .val { color:var(--c1); }
+
+  /* Side panel */
+  .panel {
+    background: rgba(0,255,180,0.015);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--dim) transparent;
+  }
+
+  .panel-section {
+    border-bottom: 1px solid var(--dim);
+    padding: 14px 16px;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Brain cards */
+  .brain-card {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .brain-card::before {
+    content:'';
+    position:absolute; left:0; top:0; bottom:0;
+    width:3px;
+  }
+
+  .brain-card:hover {
+    background: rgba(0,255,180,0.04);
+    border-color: var(--dim);
+  }
+
+  .brain-card.active {
+    border-color: var(--c1);
+    background: rgba(0,255,180,0.06);
+  }
+
+  .card-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+
+  .brain-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight:700;
+    letter-spacing:0.1em;
+  }
+
+  .brain-port {
+    font-size:0.6rem; color:var(--muted);
+  }
+
+  .brain-stats {
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:4px; font-size:0.6rem;
+  }
+
+  .stat { display:flex; flex-direction:column; gap:1px; }
+  .stat-label { color:var(--muted); font-size:0.55rem; }
+  .stat-value { color:var(--c1); font-weight:bold; }
+
+  /* Hz bar */
+  .hz-bar {
+    margin-top:6px; height:2px;
+    background: rgba(255,255,255,0.05);
+    border-radius:1px; overflow:hidden;
+  }
+
+  .hz-fill {
+    height:100%; border-radius:1px;
+    transition: width 0.5s ease;
+  }
+
+  /* Total stats */
+  .total-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .total-stat {
+    padding:8px;
+    border:1px solid var(--dim);
+    border-radius:2px;
+  }
+
+  .total-stat .big {
+    font-family:'Orbitron',sans-serif;
+    font-size:1.1rem;
+    font-weight:700;
+    color:var(--c1);
+    text-shadow:0 0 10px var(--c1);
+  }
+
+  .total-stat .label {
+    font-size:0.55rem; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.15em;
+    margin-top:2px;
+  }
+
+  /* Crypto pulse */
+  .crypto-list { font-size:0.65rem; }
+
+  .crypto-item {
+    display:flex; justify-content:space-between;
+    padding:4px 0;
+    border-bottom:1px solid var(--dim);
+  }
+
+  .crypto-item:last-child { border-bottom:none; }
+  .crypto-concept { color:var(--text); }
+  .crypto-mastery {
+    font-family:'Orbitron',sans-serif;
+    font-size:0.6rem;
+  }
+
+  /* Activity log */
+  .log-list {
+    font-size:0.6rem;
+    max-height:120px;
+    overflow-y:auto;
+  }
+
+  .log-item {
+    padding:3px 0;
+    border-bottom:1px solid rgba(0,255,180,0.05);
+    display:flex; gap:8px;
+  }
+
+  .log-time { color:var(--muted); flex-shrink:0; }
+  .log-msg { color:var(--text); }
+
+  /* Offline */
+  .offline { opacity:0.3; }
+  .offline .stat-value { color:var(--c2); }
+
+  /* Chain status */
+  .chain-valid { color:var(--c1); }
+  .chain-invalid { color:var(--c2); }
+
+  /* Think box */
+  .think-box {
+    display:flex; gap:6px; margin-top:8px;
+  }
+
+  .think-input {
+    flex:1; background:rgba(0,255,180,0.05);
+    border:1px solid var(--dim); border-radius:2px;
+    color:var(--text); font-family:'Share Tech Mono',monospace;
+    font-size:0.65rem; padding:6px 8px;
+    outline:none;
+  }
+
+  .think-input:focus { border-color:var(--c1); }
+
+  .think-btn {
+    background:rgba(0,255,180,0.1);
+    border:1px solid var(--c1); border-radius:2px;
+    color:var(--c1); font-family:'Orbitron',sans-serif;
+    font-size:0.55rem; letter-spacing:0.1em;
+    padding:0 10px; cursor:pointer;
+    transition:all 0.2s;
+  }
+
+  .think-btn:hover { background:rgba(0,255,180,0.2); }
+
+  .think-result {
+    margin-top:8px; font-size:0.6rem;
+    color:var(--muted); line-height:1.5;
+    max-height:80px; overflow-y:auto;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">SOUL<span>LINK</span> BRAIN MESH <span style="font-size:0.7em;opacity:0.6">v11</span></div>
+    <div class="status-bar">
+      <span class="live">● LIVE</span>
+      <span id="hdr-time">--:--:--</span>
+      <span id="hdr-total">N=-- SYN=--</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="canvas3d">
+      <canvas id="c"></canvas>
+      <div class="hud-overlay">
+        <div>RENDERER <span class="val">WebGL2</span></div>
+        <div>BACKEND <span class="val">PyTorch CUDA</span></div>
+        <div>GPU <span class="val">RTX 4060</span></div>
+        <div id="hud-n">TOTAL N <span class="val">--</span></div>
+        <div id="hud-hz">MESH HZ <span class="val">--</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <!-- Totaux -->
+      <div class="panel-section">
+        <div class="panel-title">Mesh Status</div>
+        <div class="total-grid">
+          <div class="total-stat">
+            <div class="big" id="tot-n">--</div>
+            <div class="label">Neurones</div>
+          </div>
+          <div class="total-stat">
+            <div class="big" id="tot-syn">--</div>
+            <div class="label">Synapses</div>
+          </div>
+          <div class="total-stat">
+            <div class="big" id="tot-brains">6</div>
+            <div class="label">Cerveaux</div>
+          </div>
+          <div class="total-stat">
+            <div class="big" id="tot-kg">--</div>
+            <div class="label">KG Concepts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cerveaux -->
+      <div class="panel-section">
+        <div class="panel-title">6 Cerveaux Spécialisés</div>
+        <div id="brains-list"></div>
+      </div>
+
+      <!-- Crypto -->
+      <div class="panel-section">
+        <div class="panel-title">Brain-Crypto Pulse</div>
+        <div class="crypto-list" id="crypto-list">
+          <div style="color:var(--muted);font-size:0.6rem">Chargement...</div>
+        </div>
+      </div>
+
+      <!-- Think -->
+      <div class="panel-section">
+        <div class="panel-title">Consulter le Mesh</div>
+        <div class="think-box">
+          <input class="think-input" id="think-input" placeholder="bitcoin, neural, quantum..." />
+          <button class="think-btn" onclick="doThink()">THINK</button>
+        </div>
+        <div class="think-result" id="think-result"></div>
+      </div>
+
+      <!-- Log -->
+      <div class="panel-section">
+        <div class="panel-title">Activity Log</div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const BASE = 'http://192.168.0.26';
+const BRAINS = [
+  {name:'Science', port:9010, color:'#ffffff'},
+  {name:'Mind',    port:9011, color:'#3d9eff'},
+  {name:'Engineer',port:9012, color:'#c0ffc0'},
+  {name:'Crypto',  port:9013, color:'#ffd700'},
+  {name:'Creative',port:9014, color:'#ffb0c0'},
+  {name:'Meta',    port:9015, color:'#ffd0ff'},
+];
+const ORCH = `${BASE}:9020`;
+let brainData = {};
+let particles = [];
+let signals = [];
+let logs = [];
+let maxHz = 100;
+
+// ── Fetch helpers ─────────────────────────────────────────────────────────────
+async function fetchJSON(url) {
+  try {
+    const r = await fetch(url, {signal: AbortSignal.timeout(3000)});
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+function addLog(msg) {
+  const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logs.unshift({time:now, msg});
+  if(logs.length>20) logs.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('log-list');
+  el.innerHTML = logs.map(l =>
+    `<div class="log-item"><span class="log-time">${l.time}</span><span class="log-msg">${l.msg}</span></div>`
+  ).join('');
+}
+
+// ── Poll orchestrateur ────────────────────────────────────────────────────────
+async function pollMesh() {
+  const d = await fetchJSON(`${ORCH}/api/mesh/status`);
+  if(!d) return;
+
+  const t = d.total || {};
+  document.getElementById('tot-n').textContent = (t.N||0).toLocaleString();
+  document.getElementById('tot-syn').textContent = ((t.syn||0)/1000).toFixed(0)+'K';
+  document.getElementById('tot-brains').textContent = t.brains||6;
+  document.getElementById('tot-kg').textContent = t.shared_kg||'--';
+  document.getElementById('hdr-total').textContent = `N=${(t.N||0).toLocaleString()} SYN=${((t.syn||0)/1000).toFixed(0)}K`;
+  document.getElementById('hud-n').innerHTML = `TOTAL N <span class="val">${(t.N||0).toLocaleString()}</span>`;
+
+  brainData = d.mesh || {};
+  let totalHz = 0;
+  for(const b of Object.values(brainData)) { totalHz += b.hz||0; }
+  maxHz = Math.max(maxHz, totalHz, 100);
+  document.getElementById('hud-hz').innerHTML = `MESH HZ <span class="val">${totalHz.toFixed(0)}</span>`;
+
+  renderBrains();
+}
+
+async function pollCrypto() {
+  const d = await fetchJSON(`${ORCH}/api/mesh/crypto/pulse`);
+  if(!d||!d.top_concepts) return;
+  const el = document.getElementById('crypto-list');
+  el.innerHTML = d.top_concepts.slice(0,6).map(c => {
+    const pct = Math.round(c.mastery*100);
+    const col = pct>50?'#00ffb4':pct>20?'#ffd700':'#ff3e7f';
+    return `<div class="crypto-item">
+      <span class="crypto-concept">${c.concept}</span>
+      <span class="crypto-mastery" style="color:${col}">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Render brain cards ────────────────────────────────────────────────────────
+function renderBrains() {
+  const el = document.getElementById('brains-list');
+  const colors = ['#ffffff','#3d9eff','#c0ffc0','#ffd700','#ffb0c0','#ffd0ff'];
+  const names = Object.keys(brainData);
+  el.innerHTML = names.map((name,i) => {
+    const b = brainData[name];
+    const offline = !b||b.status==='offline';
+    const hz = b?.hz||0;
+    const N = b?.N||0;
+    const syn = b?.syn||0;
+    const col = colors[i%colors.length];
+    const hzPct = Math.min(100, hz/20);
+    return `<div class="brain-card ${offline?'offline':''}" onclick="selectBrain('${name}')">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${col}"></div>
+      <div class="card-header">
+        <span class="brain-name" style="color:${col}">Brain-${name.toUpperCase()}</span>
+        <span class="brain-port">:${b?.port||'?'}</span>
+      </div>
+      <div class="brain-stats">
+        <div class="stat"><span class="stat-label">NEURONS</span><span class="stat-value">${N.toLocaleString()}</span></div>
+        <div class="stat"><span class="stat-label">HZ</span><span class="stat-value">${hz.toFixed(0)}</span></div>
+        <div class="stat"><span class="stat-label">SYN</span><span class="stat-value">${(syn/1000).toFixed(1)}K</span></div>
+      </div>
+      <div class="hz-bar"><div class="hz-fill" style="width:${hzPct}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function selectBrain(name) {
+  addLog(`Focus: Brain-${name.toUpperCase()}`);
+}
+
+// ── Think API ─────────────────────────────────────────────────────────────────
+async function doThink() {
+  const task = document.getElementById('think-input').value.trim();
+  if(!task) return;
+  document.getElementById('think-result').textContent = '⟳ Consultation mesh...';
+  addLog(`Think: "${task}"`);
+  const d = await fetchJSON(`${ORCH}/api/mesh/think`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({task})
+  });
+  if(!d) { document.getElementById('think-result').textContent = 'Erreur réseau'; return; }
+  const concepts = (d.top_concepts||[]).slice(0,4).map(c=>c.concept).join(', ');
+  const brains = (d.brains_consulted||[]).join(', ');
+  document.getElementById('think-result').textContent =
+    `Confiance: ${d.confidence||'?'} | Cerveaux: ${brains}\nConcepts: ${concepts}`;
+}
+
+// override fetch for POST
+const _fetch = window.fetch;
+window.fetchJSON = async function(url, opts) {
+  try {
+    const r = await _fetch(url, {signal: AbortSignal.timeout(3000), ...opts});
+    return await r.json();
+  } catch(e) { return null; }
+};
+
+// ── 3D Visualisation Three.js ─────────────────────────────────────────────────
+const BRAIN_COLORS = [0xffffff,0x3d9eff,0x00ff88,0xffd700,0xff88cc,0xcc88ff];
+const BRAIN_POS = [
+  [0,60,0],[-80,-20,30],[80,-20,30],
+  [0,-60,0],[-50,20,-60],[50,20,-60]
+];
+
+let scene, camera, renderer, clock;
+let brainMeshes = [];
+let connectionLines = [];
+let particleSystems = [];
+let frameId;
+
+function init3D() {
+  const container = document.getElementById('canvas3d');
+  const canvas = document.getElementById('c');
+
+  // Three.js via CDN
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  script.onload = () => setup3D(container, canvas);
+  document.head.appendChild(script);
+}
+
+function setup3D(container, canvas) {
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+
+  scene = new THREE.Scene();
+  scene.background = null;
+  scene.fog = new THREE.FogExp2(0x020408, 0.003);
+
+  camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 2000);
+  camera.position.set(0, 50, 280);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  clock = new THREE.Clock();
+
+  // Lumières
+  scene.add(new THREE.AmbientLight(0x001122, 2));
+  const pt = new THREE.PointLight(0x00ffb4, 3, 500);
+  pt.position.set(0, 100, 0);
+  scene.add(pt);
+
+  // Créer les 6 cerveaux
+  const names = ['science','mind','engineer','crypto','creative','meta'];
+  names.forEach((name, i) => {
+    const pos = BRAIN_POS[i];
+    const col = BRAIN_COLORS[i];
+
+    // Sphère principale
+    const geo = new THREE.SphereGeometry(18, 32, 32);
+    const mat = new THREE.MeshStandardMaterial({
+      color: col, emissive: col, emissiveIntensity: 0.3,
+      metalness: 0.1, roughness: 0.8,
+      wireframe: false,
+      transparent: true, opacity: 0.15
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(...pos);
+    mesh.userData = {name, color:col, basePos:[...pos], phase: Math.random()*Math.PI*2};
+    scene.add(mesh);
+    brainMeshes.push(mesh);
+
+    // Wireframe overlay
+    const wfMat = new THREE.MeshBasicMaterial({color:col, wireframe:true, transparent:true, opacity:0.08});
+    const wf = new THREE.Mesh(geo.clone(), wfMat);
+    wf.position.set(...pos);
+    scene.add(wf);
+
+    // Halo glow
+    const haloGeo = new THREE.SphereGeometry(22, 16, 16);
+    const haloMat = new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.04, side:THREE.BackSide});
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    halo.position.set(...pos);
+    scene.add(halo);
+
+    // Particules internes
+    const pCount = 80;
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(pCount*3);
+    for(let j=0;j<pCount;j++){
+      const r = Math.random()*16;
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos(2*Math.random()-1);
+      pPos[j*3]   = pos[0]+r*Math.sin(phi)*Math.cos(theta);
+      pPos[j*3+1] = pos[1]+r*Math.sin(phi)*Math.sin(theta);
+      pPos[j*3+2] = pos[2]+r*Math.cos(phi);
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({color:col, size:0.8, transparent:true, opacity:0.6});
+    const pts = new THREE.Points(pGeo, pMat);
+    pts.userData = {origPos: pPos.slice(), phase: Math.random()*Math.PI*2, brainIdx:i};
+    scene.add(pts);
+    particleSystems.push(pts);
+  });
+
+  // Connexions entre cerveaux
+  const connections = [[0,1],[0,2],[1,3],[2,3],[1,4],[2,5],[4,5],[3,4],[3,5]];
+  connections.forEach(([a,b]) => {
+    const pa = BRAIN_POS[a], pb = BRAIN_POS[b];
+    const pts = [new THREE.Vector3(...pa), new THREE.Vector3(...pb)];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x00ffb4, transparent:true, opacity:0.06
+    });
+    const line = new THREE.Line(geo, mat);
+    line.userData = {a, b};
+    scene.add(line);
+    connectionLines.push(line);
+  });
+
+  // Grille centrale
+  const gridHelper = new THREE.GridHelper(400, 20, 0x003322, 0x001811);
+  gridHelper.position.y = -80;
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = 0.4;
+  scene.add(gridHelper);
+
+  window.addEventListener('resize', () => {
+    const W2 = container.clientWidth, H2 = container.clientHeight;
+    camera.aspect = W2/H2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W2, H2);
+  });
+
+  animate3D();
+}
+
+function animate3D() {
+  frameId = requestAnimationFrame(animate3D);
+  const t = clock.getElapsedTime();
+
+  // Rotation camera orbitale lente
+  camera.position.x = Math.sin(t*0.08) * 280;
+  camera.position.z = Math.cos(t*0.08) * 280;
+  camera.position.y = 50 + Math.sin(t*0.05) * 30;
+  camera.lookAt(0, 0, 0);
+
+  // Animer cerveaux selon Hz
+  brainMeshes.forEach((mesh, i) => {
+    const name = mesh.userData.name;
+    const bData = brainData[name];
+    const hz = bData?.hz || 0;
+    const N = bData?.N || 0;
+
+    // Pulse selon Hz
+    const scale = 1 + Math.sin(t*2 + mesh.userData.phase) * 0.05 + (hz/2000)*0.15;
+    mesh.scale.setScalar(scale);
+
+    // Emissive selon activite
+    const intensity = Math.min(1.0, hz/500 * 0.8 + 0.1);
+    mesh.material.emissiveIntensity = intensity;
+    mesh.material.opacity = 0.08 + intensity*0.2;
+
+    // Flottement
+    const bp = mesh.userData.basePos;
+    mesh.position.y = bp[1] + Math.sin(t*0.4 + mesh.userData.phase) * 5;
+  });
+
+  // Animer particules
+  particleSystems.forEach((pts, i) => {
+    const name = ['science','mind','engineer','crypto','creative','meta'][i];
+    const hz = brainData[name]?.hz || 0;
+    const speed = 0.1 + hz/500 * 0.3;
+
+    const pos = pts.geometry.attributes.position.array;
+    const orig = pts.userData.origPos;
+    const phase = pts.userData.phase;
+    for(let j=0; j<pos.length/3; j++){
+      const bp = BRAIN_POS[i];
+      const jitter = hz > 10 ? Math.sin(t*speed*3+j+phase)*0.3 : 0;
+      pos[j*3]   = orig[j*3]   + jitter;
+      pos[j*3+1] = orig[j*3+1] + Math.sin(t*speed+j*0.5)*0.4;
+      pos[j*3+2] = orig[j*3+2] + jitter;
+    }
+    pts.geometry.attributes.position.needsUpdate = true;
+    pts.material.opacity = 0.2 + Math.min(0.8, hz/500*0.6);
+  });
+
+  // Animer connexions selon activite
+  connectionLines.forEach((line, i) => {
+    const a = BRAIN_NAMES[line.userData.a];
+    const b = BRAIN_NAMES[line.userData.b];
+    const hzA = brainData[a]?.hz || 0;
+    const hzB = brainData[b]?.hz || 0;
+    const activity = (hzA + hzB) / 1000;
+    line.material.opacity = 0.03 + Math.sin(t*2+i)*0.02 + activity*0.1;
+  });
+
+  renderer.render(scene, camera);
+}
+
+const BRAIN_NAMES = ['science','mind','engineer','crypto','creative','meta'];
+
+// ── Polling loop ──────────────────────────────────────────────────────────────
+let tick = 0;
+async function poll() {
+  document.getElementById('hdr-time').textContent =
+    new Date().toLocaleTimeString('fr-FR');
+  try {
+    await pollMesh();
+    if(tick % 3 === 0) await pollCrypto();
+  } catch(e) {}
+  tick++;
+  setTimeout(poll, 2000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+init3D();
+poll();
+addLog('Dashboard SoulLink Brain Mesh v11 démarré');
+addLog('Connexion à http://192.168.0.26:9020...');
+</script>
+</body>
+</html>
