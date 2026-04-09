@@ -189,7 +189,8 @@ class BrainV11:
         self._upload_gpu()
         self._load_state()
 
-        self._lock       = threading.Lock()
+        self._lock       = threading.Lock()   # lock principal (sim)
+        self._grow_lock  = threading.Lock()   # lock neurogenese separee
         self._last_learn = time.time()
 
         threading.Thread(target=self._sim_loop,       daemon=True).start()
@@ -438,7 +439,7 @@ class BrainV11:
     def _learn_loop(self):
         while True:
             time.sleep(0.05)
-            with self._lock:
+            with self._grow_lock:
                 n = self._gpu_n
                 if n < 2 or not self._syn_rows: continue
                 t = self.sim_t
@@ -490,7 +491,7 @@ class BrainV11:
             while self._neuron_queue and len(batch)<50:
                 batch.append(self._neuron_queue.popleft())
             if not batch: continue
-            with self._lock:
+            with self._grow_lock:
                 n_before = self.N
                 for mod_name in batch:
                     if self.N >= MAX_NEURONS: break
@@ -506,14 +507,16 @@ class BrainV11:
                             w2=random.uniform(0.15,0.65)*float(self._exc_cpu[j])
                             self._syn_rows.append(j); self._syn_cols.append(i); self._syn_vals.append(w2)
                     self._growth+=1
-                # Re-upload GPU
-                self._upload_gpu()
+                # Re-upload GPU seulement si N <= 500
+                if self.N <= 500:
+                    with self._lock:
+                        self._upload_gpu()
 
     def _grow_loop(self):
         while True:
             hz=self.stats.get("hz",0)
             time.sleep(BASE_GROW_INTERVAL*(4.0 if hz>1000 else 3.0 if hz>500 else 2.0 if hz>200 else 1.0))
-            if self.N>=MAX_NEURONS: continue
+            if self.N>=2000: continue  # Palier 2000
             if TORCH_OK and self._gpu_ready:
                 acts={nm:float(self._gl_gpu[np.where(self._mod_cpu[:self.N]==self.mod_idx[nm])[0]].mean().cpu()) if np.any(self._mod_cpu[:self.N]==self.mod_idx[nm]) else 0.0 for nm in self.mod_names}
             else:
@@ -569,7 +572,8 @@ class BrainV11:
         tick=0
         while True:
             time.sleep(30)
-            with self._lock: self._save_state()
+            with self._grow_lock:
+                self._save_state()
             tick+=1
 
     # ── API ───────────────────────────────────────────────────────────────────

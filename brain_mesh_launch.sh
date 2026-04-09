@@ -3,7 +3,7 @@
 # Usage: bash brain_mesh_launch.sh [start|stop|status|restart]
 
 BRAIN_DIR="/mnt/nvme/soullink_brain"
-CONFIG="$BRAIN_DIR/brain_v10_config.py"
+CONFIG="$BRAIN_DIR/brain_v11.py"
 ORCH="$BRAIN_DIR/brain_orchestrator.py"
 LOG_DIR="/root/.openclaw/workspace/logs"
 mkdir -p "$LOG_DIR"
