@@ -1,0 +1,38 @@
+# Backups
+*.backup_*
+*.bk_*
+backups/
+__pycache__/
+
+# Données volumineuses
+papers/
+tts_models/
+tts_research/
+neurons/
+synapses/
+datasets/
+archive_visualization/
+
+# Sous-repos git embarqués
+clone_skills/
+clone_tools/
+neural_repos/
+research/
+openclaw/
+
+# Fichiers runtime
+*.log
+*.pid
+*.lock
+neurons_state.json
+brain_state*.json
+brain_chain.jsonl
+status_*.json
+observation_history.json
+auto_save.log
+migration_plan.md
+
+# NPZ et états (trop volumineux)
+brain_v10_neurons.npz
+brain_v10_state.json
+mesh/neurons_*.npz
