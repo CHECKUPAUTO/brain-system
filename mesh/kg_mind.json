@@ -1,75 +1,5 @@
 {
   "nodes": {
-    "neuroplasticity": {
-      "module": "neuroscience",
-      "mastery": 1.0,
-      "times": 76,
-      "complexity": 2.0,
-      "first_seen": 1775661142.210416
-    },
-    "consciousness": {
-      "module": "philosophy",
-      "mastery": 1.0,
-      "times": 76,
-      "complexity": 2.0,
-      "first_seen": 1775661166.4552019
-    },
-    "neural_oscillation": {
-      "module": "neuroscience",
-      "mastery": 1.0,
-      "times": 76,
-      "complexity": 2.0,
-      "first_seen": 1775661198.6487515
-    },
-    "hebbian_learning": {
-      "module": "neuroscience",
-      "mastery": 1.0,
-      "times": 76,
-      "complexity": 2.0,
-      "first_seen": 1775661222.866782
-    },
-    "working_memory": {
-      "module": "memory",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661263.1023686
-    },
-    "attention": {
-      "module": "attention",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661295.2531703
-    },
-    "language_acquisition": {
-      "module": "language",
-      "mastery": 1.0,
-      "times": 73,
-      "complexity": 2.0,
-      "first_seen": 1775661335.5292
-    },
-    "cognitive_science": {
-      "module": "neuroscience",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661367.6899495
-    },
-    "self-organization": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661399.8821468
-    },
-    "emergent_behavior": {
-      "module": "patterns",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661432.0667841
-    },
     "euler's_formula": {
       "complexity": 2.0,
       "first_seen": 1775649919.9960358,
@@ -279,6 +209,76 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661339.6421955
+    },
+    "neuroplasticity": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 76,
+      "complexity": 2.0,
+      "first_seen": 1775661142.210416
+    },
+    "consciousness": {
+      "module": "philosophy",
+      "mastery": 1.0,
+      "times": 75,
+      "complexity": 2.0,
+      "first_seen": 1775661166.4552019
+    },
+    "neural_oscillation": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 74,
+      "complexity": 2.0,
+      "first_seen": 1775661198.6487515
+    },
+    "hebbian_learning": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 74,
+      "complexity": 2.0,
+      "first_seen": 1775661222.866782
+    },
+    "working_memory": {
+      "module": "memory",
+      "mastery": 1.0,
+      "times": 72,
+      "complexity": 2.0,
+      "first_seen": 1775661263.1023686
+    },
+    "attention": {
+      "module": "attention",
+      "mastery": 1.0,
+      "times": 72,
+      "complexity": 2.0,
+      "first_seen": 1775661295.2531703
+    },
+    "language_acquisition": {
+      "module": "language",
+      "mastery": 1.0,
+      "times": 69,
+      "complexity": 2.0,
+      "first_seen": 1775661335.5292
+    },
+    "cognitive_science": {
+      "module": "neuroscience",
+      "mastery": 1.0,
+      "times": 68,
+      "complexity": 2.0,
+      "first_seen": 1775661367.6899495
+    },
+    "self-organization": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 67,
+      "complexity": 2.0,
+      "first_seen": 1775661399.8821468
+    },
+    "emergent_behavior": {
+      "module": "patterns",
+      "mastery": 1.0,
+      "times": 65,
+      "complexity": 2.0,
+      "first_seen": 1775661432.0667841
     },
     "algorithms": {
       "module": "computation",
@@ -566,6 +566,13 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661631.8973796
+    },
+    "fear_greed_14": {
+      "module": "sentiment",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775712465.970928
     }
   },
   "edges": {}

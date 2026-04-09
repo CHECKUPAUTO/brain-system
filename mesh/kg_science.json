@@ -12,14 +12,14 @@
       "first_seen": 1775649960.245172,
       "mastery": 1.0,
       "module": "calculus",
-      "times": 31
+      "times": 94
     },
     "linear_algebra": {
       "complexity": 2.0,
       "first_seen": 1775650000.487198,
       "mastery": 1.0,
       "module": "algebra",
-      "times": 30
+      "times": 92
     },
     "prime_numbers": {
       "complexity": 2.0,
@@ -33,7 +33,7 @@
       "first_seen": 1775650089.1683168,
       "mastery": 1.0,
       "module": "mathematics",
-      "times": 29
+      "times": 90
     },
     "calculus": {
       "complexity": 2.0,
@@ -54,7 +54,7 @@
       "first_seen": 1775650194.446221,
       "mastery": 1.0,
       "module": "information",
-      "times": 27
+      "times": 89
     },
     "turing_completeness": {
       "complexity": 2.0,
@@ -68,7 +68,7 @@
       "first_seen": 1775650274.9057815,
       "mastery": 1.0,
       "module": "physics",
-      "times": 28
+      "times": 93
     },
     "topology": {
       "module": "geometry",
@@ -82,7 +82,7 @@
       "first_seen": 1775650339.623058,
       "mastery": 1.0,
       "module": "statistics",
-      "times": 26
+      "times": 86
     },
     "kolmogorov_complexity": {
       "complexity": 2.0,
@@ -110,7 +110,7 @@
       "first_seen": 1775650485.0730824,
       "mastery": 1.0,
       "module": "physics",
-      "times": 28
+      "times": 89
     },
     "godel_theorems": {
       "complexity": 2.0,
@@ -138,14 +138,14 @@
       "first_seen": 1775650654.5909567,
       "mastery": 1.0,
       "module": "mathematics",
-      "times": 25
+      "times": 88
     },
     "graph_theory": {
       "complexity": 2.0,
       "first_seen": 1775650694.9325254,
       "mastery": 1.0,
       "module": "computation",
-      "times": 25
+      "times": 87
     },
     "differential_geometry": {
       "module": "geometry",
@@ -201,7 +201,7 @@
       "first_seen": 1775651916.3345382,
       "mastery": 1.0,
       "module": "physics",
-      "times": 25
+      "times": 89
     },
     "game_theory": {
       "module": "optimization",
@@ -566,6 +566,13 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661631.8973796
+    },
+    "fear_greed_14": {
+      "module": "sentiment",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775712465.970928
     }
   },
   "edges": {}

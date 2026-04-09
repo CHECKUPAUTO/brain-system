@@ -1,0 +1,827 @@
+{
+  "nodes": {
+    "numbers": {
+      "module": "mathematics",
+      "mastery": 0.91,
+      "times": 7,
+      "complexity": 1,
+      "first_seen": 1774903978.3814862
+    },
+    "euler's_formula": {
+      "module": "mathematics",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904002.5732126
+    },
+    "fourier": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1774904004.5838664
+    },
+    "arithmetic": {
+      "module": "mathematics",
+      "mastery": 0.91,
+      "times": 7,
+      "complexity": 1,
+      "first_seen": 1774904034.720762
+    },
+    "fourier_transform": {
+      "module": "calculus",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904050.8349173
+    },
+    "calculus": {
+      "module": "calculus",
+      "mastery": 0.26,
+      "times": 4,
+      "complexity": 2.0,
+      "first_seen": 1774904060.6241453
+    },
+    "linear_algebra": {
+      "module": "algebra",
+      "mastery": 1.0,
+      "times": 8,
+      "complexity": 2.0,
+      "first_seen": 1774904083.1337326
+    },
+    "algebra_basic": {
+      "module": "algebra",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904091.1636035
+    },
+    "prime_numbers": {
+      "module": "mathematics",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904115.3558464
+    },
+    "geometry_euclid": {
+      "module": "geometry",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904131.5275698
+    },
+    "riemann_hypothesis": {
+      "module": "mathematics",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904163.7139907
+    },
+    "functions": {
+      "module": "mathematics",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904171.7478886
+    },
+    "trigonometry": {
+      "module": "geometry",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904212.0391605
+    },
+    "group_theory": {
+      "module": "algebra",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904244.2184916
+    },
+    "logarithms": {
+      "module": "mathematics",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904252.2648637
+    },
+    "limits": {
+      "module": "calculus",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774904292.6528625
+    },
+    "entropy": {
+      "module": "information",
+      "mastery": 1.0,
+      "times": 8,
+      "complexity": 2.0,
+      "first_seen": 1774904292.659788
+    },
+    "derivatives": {
+      "module": "calculus",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904332.8648
+    },
+    "turing_completeness": {
+      "module": "computation",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904332.871424
+    },
+    "quantum_mechanics": {
+      "module": "physics",
+      "mastery": 0.26,
+      "times": 4,
+      "complexity": 2.0,
+      "first_seen": 1774904365.19551
+    },
+    "integrals": {
+      "module": "calculus",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904373.2214599
+    },
+    "vectors": {
+      "module": "algebra",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 2,
+      "first_seen": 1774904413.4790702
+    },
+    "topology": {
+      "module": "geometry",
+      "mastery": 1.0,
+      "times": 8,
+      "complexity": 2.0,
+      "first_seen": 1774904413.4869432
+    },
+    "matrices": {
+      "module": "algebra",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904453.8537467
+    },
+    "bayesian_inference": {
+      "module": "statistics",
+      "mastery": 0.18,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1774904461.981036
+    },
+    "kolmogorov_complexity": {
+      "module": "information",
+      "mastery": 0.12,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1774904502.4364169
+    },
+    "probability": {
+      "module": "statistics",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 2,
+      "first_seen": 1774904526.542489
+    },
+    "category_theory": {
+      "module": "algebra",
+      "mastery": 0.8700000000000001,
+      "times": 5,
+      "complexity": 2.0,
+      "first_seen": 1774904534.619168
+    },
+    "statistics_basic": {
+      "module": "statistics",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904566.817699
+    },
+    "mandelbrot_set": {
+      "module": "patterns",
+      "mastery": 0.12,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1774904582.8821452
+    },
+    "combinatorics": {
+      "module": "mathematics",
+      "mastery": 0.8,
+      "times": 5,
+      "complexity": 2,
+      "first_seen": 1774904607.147125
+    },
+    "number_theory": {
+      "module": "mathematics",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774904647.4366794
+    },
+    "groups": {
+      "module": "algebra",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774904688.2397928
+    },
+    "rings_fields": {
+      "module": "algebra",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774904720.650324
+    },
+    "differential_eq": {
+      "module": "calculus",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774904786.4709115
+    },
+    "complex_analysis": {
+      "module": "calculus",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774904819.3919182
+    },
+    "fourier_analysis": {
+      "module": "calculus",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774904851.96878
+    },
+    "bayesian": {
+      "module": "statistics",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904884.2358902
+    },
+    "information_theory": {
+      "module": "information",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904924.8130004
+    },
+    "graph_theory": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774904965.8377492
+    },
+    "algorithms": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774905007.2877176
+    },
+    "complexity_theory": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 5,
+      "complexity": 4,
+      "first_seen": 1774905048.118084
+    },
+    "formal_logic": {
+      "module": "logic",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774905081.0822282
+    },
+    "type_theory": {
+      "module": "logic",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905122.4209585
+    },
+    "set_theory": {
+      "module": "logic",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774905156.0904653
+    },
+    "lambda_calculus": {
+      "module": "computation",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905197.375967
+    },
+    "classical_mech": {
+      "module": "physics",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774905255.0457234
+    },
+    "calculus_advanced": {
+      "module": "calculus",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905295.8023095
+    },
+    "electromagnetism": {
+      "module": "physics",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905328.9984863
+    },
+    "thermodynamics": {
+      "module": "physics",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774905361.711943
+    },
+    "quantum_mech": {
+      "module": "physics",
+      "mastery": 1.0,
+      "times": 4,
+      "complexity": 5,
+      "first_seen": 1774905402.1683526
+    },
+    "convex_opt": {
+      "module": "optimization",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905434.5070736
+    },
+    "gradient_descent": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774905467.6274595
+    },
+    "kolmogorov": {
+      "module": "information",
+      "mastery": 1.0,
+      "times": 4,
+      "complexity": 5,
+      "first_seen": 1774905541.7715712
+    },
+    "godel": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 4,
+      "complexity": 5,
+      "first_seen": 1774905574.6075027
+    },
+    "chaos_theory": {
+      "module": "mathematics",
+      "mastery": 1.0,
+      "times": 4,
+      "complexity": 5,
+      "first_seen": 1774905607.099222
+    },
+    "fractal_geometry": {
+      "module": "patterns",
+      "mastery": 0.88,
+      "times": 4,
+      "complexity": 4,
+      "first_seen": 1774905639.6684635
+    },
+    "neural_math": {
+      "module": "neuroscience",
+      "mastery": 0.95,
+      "times": 5,
+      "complexity": 3,
+      "first_seen": 1774905673.0496974
+    },
+    "game_theory": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 6,
+      "complexity": 3,
+      "first_seen": 1774905713.8154933
+    },
+    "strategie": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774905886.89473
+    },
+    "gradient": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774905922.4653323
+    },
+    "cryptho": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774906042.3382215
+    },
+    "statistics": {
+      "module": "statistics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774907973.9133162
+    },
+    "optimization": {
+      "module": "optimization",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774907985.4803746
+    },
+    "neural_networks": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1774907987.3094304
+    },
+    "active_matter": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577295.3518295
+    },
+    "convective_envelope_rsg": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577295.659831
+    },
+    "euler_multi_quadrant": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577295.9670763
+    },
+    "helmholtz_staircase": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577296.2720988
+    },
+    "magnetohydrodynamics": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577296.5791392
+    },
+    "plasma_turbulence": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577296.8989453
+    },
+    "shallow_water_equations": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577297.2022564
+    },
+    "neutron_star_merger": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577297.504935
+    },
+    "rayleigh_benard_convection": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577297.8075218
+    },
+    "rayleigh_taylor_instability": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577298.1107395
+    },
+    "turbulent_shear_flow": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577298.413571
+    },
+    "supernova_explosion": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577298.7225478
+    },
+    "stellar_hydrodynamics": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577299.0371726
+    },
+    "radiative_turbulence": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577299.344792
+    },
+    "viscoelastic_fluid": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577299.6473973
+    },
+    "reaction_diffusion_patterns": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577299.9538682
+    },
+    "navier_stokes": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577300.2599916
+    },
+    "gravitational_waves": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577300.5631053
+    },
+    "plasma_physics": {
+      "module": "mathematics",
+      "mastery": 0.24,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1775577300.867066
+    },
+    "astrophysics_simulation": {
+      "module": "mathematics",
+      "mastery": 0.24,
+      "times": 3,
+      "complexity": 2.0,
+      "first_seen": 1775577301.171629
+    },
+    "active_matter_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577345.2077975
+    },
+    "stellar_convection_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577345.5100863
+    },
+    "euler_equations_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577345.8154478
+    },
+    "helmholtz_acoustics_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577346.1201792
+    },
+    "magnetohydrodynamics_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577346.4359317
+    },
+    "plasma_turbulence_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577346.7415345
+    },
+    "shallow_water_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577347.0469902
+    },
+    "neutron_star_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577347.3519745
+    },
+    "rayleigh_benard_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577347.6682415
+    },
+    "rayleigh_taylor_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577347.9746954
+    },
+    "turbulent_shear_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577348.2797964
+    },
+    "supernova_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577348.5854602
+    },
+    "stellar_hydrodynamics_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577348.904935
+    },
+    "radiative_transfer_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577349.2125733
+    },
+    "viscoelastic_physics": {
+      "module": "mathematics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577349.519937
+    },
+    "reaction_diffusion_chemistry": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577349.8270836
+    },
+    "navier_stokes_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577350.1438918
+    },
+    "gravitational_waves_physics": {
+      "module": "mathematics",
+      "mastery": 0.16,
+      "times": 2,
+      "complexity": 2.0,
+      "first_seen": 1775577350.4465086
+    },
+    "viscoelastic_fluid_physics": {
+      "module": "physics",
+      "mastery": 0.08,
+      "times": 1,
+      "complexity": 2.0,
+      "first_seen": 1775577403.2743766
+    }
+  },
+  "edges": {
+    "numbers||numbers": 0.18,
+    "arithmetic||numbers": 0.03,
+    "arithmetic||arithmetic": 0.18,
+    "algebra_basic||arithmetic": 0.03,
+    "algebra_basic||algebra_basic": 0.12,
+    "algebra_basic||geometry_euclid": 0.03,
+    "geometry_euclid||geometry_euclid": 0.12,
+    "functions||geometry_euclid": 0.03,
+    "functions||functions": 0.12,
+    "functions||trigonometry": 0.03,
+    "trigonometry||trigonometry": 0.12,
+    "logarithms||trigonometry": 0.03,
+    "logarithms||logarithms": 0.12,
+    "limits||logarithms": 0.03,
+    "limits||limits": 0.12,
+    "derivatives||limits": 0.03,
+    "derivatives||derivatives": 0.12,
+    "derivatives||integrals": 0.03,
+    "integrals||integrals": 0.12,
+    "integrals||vectors": 0.03,
+    "vectors||vectors": 0.12,
+    "matrices||vectors": 0.03,
+    "matrices||matrices": 0.12,
+    "linear_algebra||matrices": 0.03,
+    "linear_algebra||linear_algebra": 0.09,
+    "linear_algebra||probability": 0.03,
+    "probability||probability": 0.12,
+    "probability||statistics_basic": 0.03,
+    "statistics_basic||statistics_basic": 0.12,
+    "combinatorics||statistics_basic": 0.03,
+    "combinatorics||combinatorics": 0.12,
+    "combinatorics||number_theory": 0.03,
+    "number_theory||number_theory": 0.12,
+    "groups||number_theory": 0.03,
+    "groups||groups": 0.09,
+    "groups||rings_fields": 0.03,
+    "rings_fields||rings_fields": 0.09,
+    "rings_fields||topology": 0.03,
+    "topology||topology": 0.09,
+    "differential_eq||topology": 0.03,
+    "differential_eq||differential_eq": 0.09,
+    "complex_analysis||differential_eq": 0.03,
+    "complex_analysis||complex_analysis": 0.09,
+    "complex_analysis||fourier_analysis": 0.03,
+    "fourier_analysis||fourier_analysis": 0.09,
+    "bayesian||fourier_analysis": 0.03,
+    "bayesian||bayesian": 0.12,
+    "bayesian||information_theory": 0.03,
+    "information_theory||information_theory": 0.12,
+    "graph_theory||information_theory": 0.03,
+    "graph_theory||graph_theory": 0.12,
+    "algorithms||graph_theory": 0.03,
+    "algorithms||algorithms": 0.12,
+    "algorithms||complexity_theory": 0.03,
+    "complexity_theory||complexity_theory": 0.09,
+    "complexity_theory||formal_logic": 0.03,
+    "formal_logic||formal_logic": 0.12,
+    "formal_logic||type_theory": 0.03,
+    "type_theory||type_theory": 0.09,
+    "set_theory||type_theory": 0.03,
+    "set_theory||set_theory": 0.12,
+    "lambda_calculus||set_theory": 0.03,
+    "lambda_calculus||lambda_calculus": 0.09,
+    "category_theory||lambda_calculus": 0.03,
+    "category_theory||category_theory": 0.06,
+    "category_theory||classical_mech": 0.03,
+    "classical_mech||classical_mech": 0.12,
+    "calculus_advanced||classical_mech": 0.03,
+    "calculus_advanced||calculus_advanced": 0.09,
+    "calculus_advanced||electromagnetism": 0.03,
+    "electromagnetism||electromagnetism": 0.09,
+    "electromagnetism||thermodynamics": 0.03,
+    "thermodynamics||thermodynamics": 0.12,
+    "quantum_mech||thermodynamics": 0.03,
+    "quantum_mech||quantum_mech": 0.09,
+    "convex_opt||quantum_mech": 0.03,
+    "convex_opt||convex_opt": 0.09,
+    "convex_opt||gradient_descent": 0.03,
+    "gradient_descent||gradient_descent": 0.12,
+    "entropy||gradient_descent": 0.03,
+    "entropy||entropy": 0.09,
+    "entropy||kolmogorov": 0.03,
+    "kolmogorov||kolmogorov": 0.09,
+    "godel||kolmogorov": 0.03,
+    "godel||godel": 0.09,
+    "chaos_theory||godel": 0.03,
+    "chaos_theory||chaos_theory": 0.09,
+    "chaos_theory||fractal_geometry": 0.03,
+    "fractal_geometry||fractal_geometry": 0.09,
+    "fractal_geometry||neural_math": 0.03,
+    "neural_math||neural_math": 0.12,
+    "game_theory||neural_math": 0.03,
+    "game_theory||game_theory": 0.12
+  }
+}

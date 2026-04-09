@@ -1,0 +1,41 @@
+{
+  "name": "Brain-Medical",
+  "port": 9016,
+  "modules": [
+    "anatomy",
+    "physiology",
+    "pharmacology",
+    "diagnosis",
+    "treatment",
+    "medicine"
+  ],
+  "colors": {
+    "anatomy": "#ff6644",
+    "physiology": "#44ffcc",
+    "pharmacology": "#ff44cc",
+    "diagnosis": "#44ccff",
+    "treatment": "#ffcc44",
+    "medicine": "#cc44ff"
+  },
+  "crawl_sources": [
+    [
+      "Medicine",
+      "Medicine",
+      "anatomy"
+    ],
+    [
+      "Pharmacology",
+      "Pharmacology",
+      "pharmacology"
+    ],
+    [
+      "Human anatomy",
+      "Human_body",
+      "anatomy"
+    ]
+  ],
+  "extra_crawlers": [],
+  "kg_file": "kg_medical.json",
+  "state_file": "state_medical.json",
+  "neurons_file": "neurons_medical.npz"
+}

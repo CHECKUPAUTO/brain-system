@@ -1,75 +1,5 @@
 {
   "nodes": {
-    "algorithms": {
-      "module": "computation",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661145.249476
-    },
-    "gradient_descent": {
-      "module": "optimization",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661169.400838
-    },
-    "formal_logic": {
-      "module": "logic",
-      "mastery": 1.0,
-      "times": 75,
-      "complexity": 2.0,
-      "first_seen": 1775661209.6584468
-    },
-    "category_theory": {
-      "module": "algebra",
-      "mastery": 1.0,
-      "times": 74,
-      "complexity": 2.0,
-      "first_seen": 1775661241.9829507
-    },
-    "p_vs_np": {
-      "module": "computation",
-      "mastery": 1.0,
-      "times": 74,
-      "complexity": 2.0,
-      "first_seen": 1775661282.1965954
-    },
-    "lambda_calculus": {
-      "module": "logic",
-      "mastery": 1.0,
-      "times": 74,
-      "complexity": 2.0,
-      "first_seen": 1775661314.3987074
-    },
-    "convex_optimization": {
-      "module": "optimization",
-      "mastery": 1.0,
-      "times": 72,
-      "complexity": 2.0,
-      "first_seen": 1775661346.6281302
-    },
-    "information_theory": {
-      "module": "information",
-      "mastery": 1.0,
-      "times": 71,
-      "complexity": 2.0,
-      "first_seen": 1775661386.942894
-    },
-    "automata_theory": {
-      "module": "computation",
-      "mastery": 1.0,
-      "times": 71,
-      "complexity": 2.0,
-      "first_seen": 1775661419.1271117
-    },
-    "type_theory": {
-      "module": "logic",
-      "mastery": 1.0,
-      "times": 71,
-      "complexity": 2.0,
-      "first_seen": 1775661451.2900727
-    },
     "euler's_formula": {
       "complexity": 2.0,
       "first_seen": 1775649919.9960358,
@@ -161,6 +91,13 @@
       "module": "information",
       "times": 10
     },
+    "category_theory": {
+      "module": "algebra",
+      "mastery": 1.0,
+      "times": 102,
+      "complexity": 2.0,
+      "first_seen": 1775661241.9829507
+    },
     "mandelbrot_set": {
       "module": "patterns",
       "mastery": 1.0,
@@ -189,6 +126,13 @@
       "module": "neuroscience",
       "times": 9
     },
+    "p_vs_np": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 101,
+      "complexity": 2.0,
+      "first_seen": 1775661282.1965954
+    },
     "chaos_theory": {
       "complexity": 2.0,
       "first_seen": 1775650654.5909567,
@@ -216,6 +160,20 @@
       "mastery": 0.44999999999999996,
       "module": "statistics",
       "times": 9
+    },
+    "automata_theory": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 95,
+      "complexity": 2.0,
+      "first_seen": 1775661419.1271117
+    },
+    "lambda_calculus": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 100,
+      "complexity": 2.0,
+      "first_seen": 1775661314.3987074
     },
     "tensor_calculus": {
       "complexity": 2.0,
@@ -321,6 +279,48 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661432.0667841
+    },
+    "algorithms": {
+      "module": "computation",
+      "mastery": 1.0,
+      "times": 106,
+      "complexity": 2.0,
+      "first_seen": 1775661145.249476
+    },
+    "gradient_descent": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 103,
+      "complexity": 2.0,
+      "first_seen": 1775661169.400838
+    },
+    "formal_logic": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 103,
+      "complexity": 2.0,
+      "first_seen": 1775661209.6584468
+    },
+    "convex_optimization": {
+      "module": "optimization",
+      "mastery": 1.0,
+      "times": 99,
+      "complexity": 2.0,
+      "first_seen": 1775661346.6281302
+    },
+    "information_theory": {
+      "module": "information",
+      "mastery": 1.0,
+      "times": 96,
+      "complexity": 2.0,
+      "first_seen": 1775661386.942894
+    },
+    "type_theory": {
+      "module": "logic",
+      "mastery": 1.0,
+      "times": 95,
+      "complexity": 2.0,
+      "first_seen": 1775661451.2900727
     },
     "bitcoin": {
       "module": "blockchain_tech",
@@ -566,6 +566,13 @@
       "times": 20,
       "complexity": 2.0,
       "first_seen": 1775661631.8973796
+    },
+    "fear_greed_14": {
+      "module": "sentiment",
+      "mastery": 1.0,
+      "times": 20,
+      "complexity": 2.0,
+      "first_seen": 1775712465.970928
     }
   },
   "edges": {}

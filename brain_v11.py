@@ -508,7 +508,7 @@ class BrainV11:
                             self._syn_rows.append(j); self._syn_cols.append(i); self._syn_vals.append(w2)
                     self._growth+=1
                 # Re-upload GPU seulement si N <= 500
-                if self.N <= 500:
+                if self.N <= 5000:
                     with self._lock:
                         self._upload_gpu()
 

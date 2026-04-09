@@ -1,0 +1,105 @@
+{
+  "total_neurons": 5015,
+  "growth": 10185,
+  "total_spikes": 117529847,
+  "resonance_events": 151,
+  "last_save": 1775658299.0441687,
+  "modules": {
+    "perception": {
+      "neurons": 96,
+      "mastery": 0.0
+    },
+    "memory": {
+      "neurons": 106,
+      "mastery": 0.0
+    },
+    "reasoning": {
+      "neurons": 88,
+      "mastery": 0.0
+    },
+    "learning": {
+      "neurons": 86,
+      "mastery": 0.0
+    },
+    "attention": {
+      "neurons": 68,
+      "mastery": 0.0
+    },
+    "output": {
+      "neurons": 80,
+      "mastery": 0.0
+    },
+    "language": {
+      "neurons": 102,
+      "mastery": 0.0
+    },
+    "vision": {
+      "neurons": 73,
+      "mastery": 0.0
+    },
+    "audio": {
+      "neurons": 60,
+      "mastery": 0.0
+    },
+    "motor": {
+      "neurons": 76,
+      "mastery": 0.0
+    },
+    "mathematics": {
+      "neurons": 1204,
+      "mastery": 0.0
+    },
+    "calculus": {
+      "neurons": 150,
+      "mastery": 0.0
+    },
+    "algebra": {
+      "neurons": 111,
+      "mastery": 0.0
+    },
+    "geometry": {
+      "neurons": 109,
+      "mastery": 0.0
+    },
+    "logic": {
+      "neurons": 96,
+      "mastery": 0.0
+    },
+    "statistics": {
+      "neurons": 284,
+      "mastery": 0.0
+    },
+    "information": {
+      "neurons": 276,
+      "mastery": 0.0
+    },
+    "physics": {
+      "neurons": 670,
+      "mastery": 0.0
+    },
+    "chemistry": {
+      "neurons": 58,
+      "mastery": 0.0
+    },
+    "computation": {
+      "neurons": 379,
+      "mastery": 0.0
+    },
+    "optimization": {
+      "neurons": 74,
+      "mastery": 0.0
+    },
+    "patterns": {
+      "neurons": 67,
+      "mastery": 0.0
+    },
+    "philosophy": {
+      "neurons": 49,
+      "mastery": 0.0
+    },
+    "neuroscience": {
+      "neurons": 653,
+      "mastery": 0.0
+    }
+  }
+}

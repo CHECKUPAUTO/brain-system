@@ -1,0 +1,1504 @@
+#!/usr/bin/env python3
+"""
+SoulLink Brain v9.0 — MATHEMATICAL SINGULARITY
+═══════════════════════════════════════════════════════════════════
+24 modules cérébraux  |  Auto-curriculum mathématique/scientifique
+Neurogenèse ×8        |  Knowledge Graph live  |  Resonance Bursts
+STDP + Hebb + Avalanche Synaptique  |  Sleep Consolidation
+Métacognition (neuroscience module surveille les autres modules)
+Web crawler : Wikipedia · arXiv · OEIS · Project Euler
+═══════════════════════════════════════════════════════════════════
+
+Usage:
+    python brain_v9.py            # Port 8084 (standard)
+    python brain_v9.py --port 9000
+    python brain_v9.py --no-web   # Pas de crawler (mode offline)
+"""
+
+import random, threading, time, math, json, os, hashlib, collections
+from datetime import datetime
+from pathlib import Path
+from flask import Flask, jsonify, request, Response
+import numpy as np
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §0  PERSISTANCE
+# ─────────────────────────────────────────────────────────────────────────────
+
+PERSIST_DIR  = Path("/mnt/nvme/soullink_brain")
+PERSIST_DIR.mkdir(parents=True, exist_ok=True)
+STATE_FILE   = PERSIST_DIR / "brain_v9_state.json"
+KG_FILE      = PERSIST_DIR / "knowledge_graph.json"
+TOPIC_FILE   = PERSIST_DIR / "learned_topics_v9.json"
+
+def _load_json(path, default):
+    try:
+        if path.exists():
+            with open(path) as f: return json.load(f)
+    except Exception: pass
+    return default
+
+def _save_json(path, data):
+    try:
+        with open(path, "w") as f: json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️  Save failed {path.name}: {e}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §1  LIF PARAMETERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+VR, VT, VZ  = -70.0, -55.0, -75.0   # mV
+TAU_M       = 20.0                    # ms
+T_REFRAC    = 3.0                     # ms
+DT          = 0.5                     # ms
+
+# Apprentissage
+HEBBIAN_LR  = 0.012
+STDP_LR     = 0.025
+STDP_WIN    = 20.0
+W_DECAY     = 0.0008
+W_MIN, W_MAX = 0.04, 1.0
+
+# Neurogenèse
+BASE_GROW_INTERVAL  = 5.0   # secondes
+LEARNING_GROW_BOOST = 14    # neurones par article appris
+RESONANCE_BOOST     = 45    # neurones par burst de résonance
+AVALANCHE_THRESH    = 0.82  # activation pour déclencher une avalanche
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §2  24 MODULES — configuration complète
+# ─────────────────────────────────────────────────────────────────────────────
+
+MODULE_DEFS = [
+    # name               neurons  color       cx     cy     cz    inh    domain
+    ("perception",        20,  "#3dffc0",  -158,  82,  78,   0.15, "general"),
+    ("memory",            28,  "#3d9eff",    18, 128, -82,   0.20, "general"),
+    ("reasoning",         22,  "#ff5577",   168,  62,  42,   0.20, "general"),
+    ("learning",          16,  "#ff9944",   -88, -42, 118,   0.15, "general"),
+    ("attention",         12,  "#cc44ff",    88,  28,  88,   0.25, "general"),
+    ("output",            14,  "#aaff44",   208, -32, -48,   0.15, "general"),
+    ("language",          18,  "#44ffff",  -208, -62, -28,   0.20, "general"),
+    ("vision",            15,  "#ff6644",   -48,-122, -62,   0.15, "general"),
+    ("audio",             12,  "#6677ff",   112,-108, -88,   0.15, "general"),
+    ("motor",             10,  "#ffee44",   238, -88,  68,   0.10, "general"),
+    # ── Nouveaux modules mathématiques / scientifiques ──────────────────────
+    ("mathematics",       32,  "#ffffff",   -20, 160,  20,   0.10, "math"),
+    ("calculus",          24,  "#e0c0ff",   110, 155, -30,   0.12, "math"),
+    ("algebra",           20,  "#ffc0e0",   -90, 165,  80,   0.12, "math"),
+    ("geometry",          18,  "#a0ffd0",    30, 100, 150,   0.12, "math"),
+    ("logic",             16,  "#ffa0a0",  -160, 120,  40,   0.15, "math"),
+    ("statistics",        20,  "#c0e0ff",   160, 100, -80,   0.12, "math"),
+    ("information",       14,  "#a0c0ff",   -50,-170,  30,   0.15, "science"),
+    ("physics",           22,  "#ffd0a0",    80,-150,  70,   0.12, "science"),
+    ("chemistry",         14,  "#e0e0a0",  -130,-130, -60,   0.15, "science"),
+    ("computation",       18,  "#c0ffc0",   130,-140,  10,   0.12, "science"),
+    ("optimization",      14,  "#b0e0e0",   -20,-180,-100,   0.15, "math"),
+    ("patterns",          16,  "#ffb0c0",   -80,  30,-170,   0.12, "general"),
+    ("philosophy",        10,  "#d0d0d0",    60,  40,-180,   0.20, "general"),
+    ("neuroscience",      12,  "#ffd0ff",  -180,  10, -80,   0.18, "meta"),
+]
+
+# Graphe de câblage inter-modules (v9 — connexions étendues)
+WIRES_V9 = {
+    "perception":  ["memory", "attention", "vision", "language", "patterns"],
+    "memory":      ["reasoning", "learning", "language", "perception", "mathematics", "neuroscience"],
+    "reasoning":   ["output", "attention", "memory", "logic", "mathematics", "philosophy"],
+    "learning":    ["memory", "reasoning", "perception", "mathematics", "statistics"],
+    "attention":   ["perception", "reasoning", "vision", "audio", "mathematics"],
+    "output":      ["motor", "language", "reasoning"],
+    "language":    ["memory", "output", "audio", "reasoning", "logic", "philosophy"],
+    "vision":      ["perception", "attention", "patterns", "geometry"],
+    "audio":       ["perception", "language", "attention"],
+    "motor":       ["output", "optimization"],
+    "mathematics": ["reasoning", "logic", "algebra", "calculus", "geometry",
+                    "statistics", "information", "computation", "optimization", "memory"],
+    "calculus":    ["mathematics", "physics", "optimization", "statistics"],
+    "algebra":     ["mathematics", "logic", "geometry", "computation"],
+    "geometry":    ["mathematics", "physics", "vision", "patterns"],
+    "logic":       ["mathematics", "reasoning", "philosophy", "computation", "algebra"],
+    "statistics":  ["mathematics", "learning", "information", "physics"],
+    "information": ["mathematics", "computation", "statistics", "physics"],
+    "physics":     ["mathematics", "chemistry", "geometry", "calculus", "perception"],
+    "chemistry":   ["physics", "patterns", "computation"],
+    "computation": ["mathematics", "logic", "algebra", "optimization", "learning"],
+    "optimization":["mathematics", "computation", "calculus", "learning"],
+    "patterns":    ["perception", "mathematics", "geometry", "vision", "memory"],
+    "philosophy":  ["logic", "reasoning", "language", "neuroscience"],
+    "neuroscience":["memory", "learning", "attention", "perception", "philosophy",
+                    "mathematics", "patterns"],
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §3  KNOWLEDGE GRAPH & CURRICULUM
+# ─────────────────────────────────────────────────────────────────────────────
+
+MATH_CURRICULUM = {
+    # topic : (module, prerequisites, complexity 1-5)
+    "numbers":          ("mathematics",  [],                   1),
+    "arithmetic":       ("mathematics",  ["numbers"],          1),
+    "algebra_basic":    ("algebra",      ["arithmetic"],       2),
+    "geometry_euclid":  ("geometry",     ["arithmetic"],       2),
+    "functions":        ("mathematics",  ["algebra_basic"],    2),
+    "trigonometry":     ("geometry",     ["functions"],        2),
+    "logarithms":       ("mathematics",  ["functions"],        2),
+    "limits":           ("calculus",     ["functions"],        3),
+    "derivatives":      ("calculus",     ["limits"],           3),
+    "integrals":        ("calculus",     ["derivatives"],      3),
+    "vectors":          ("algebra",      ["algebra_basic"],    2),
+    "matrices":         ("algebra",      ["vectors"],          3),
+    "linear_algebra":   ("algebra",      ["matrices"],         3),
+    "probability":      ("statistics",   ["arithmetic"],       2),
+    "statistics_basic": ("statistics",   ["probability"],      2),
+    "combinatorics":    ("mathematics",  ["arithmetic"],       2),
+    "number_theory":    ("mathematics",  ["arithmetic"],       3),
+    "groups":           ("algebra",      ["linear_algebra"],   4),
+    "rings_fields":     ("algebra",      ["groups"],           4),
+    "topology":         ("geometry",     ["limits"],           4),
+    "differential_eq":  ("calculus",     ["integrals"],        4),
+    "complex_analysis": ("calculus",     ["limits", "vectors"],4),
+    "fourier_analysis": ("calculus",     ["integrals"],        4),
+    "bayesian":         ("statistics",   ["probability"],      3),
+    "information_theory":("information", ["probability"],      3),
+    "graph_theory":     ("computation",  ["combinatorics"],    3),
+    "algorithms":       ("computation",  ["graph_theory"],     3),
+    "complexity_theory":("computation",  ["algorithms"],       4),
+    "formal_logic":     ("logic",        ["algebra_basic"],    3),
+    "type_theory":      ("logic",        ["formal_logic"],     4),
+    "set_theory":       ("logic",        ["formal_logic"],     3),
+    "lambda_calculus":  ("computation",  ["type_theory"],      4),
+    "category_theory":  ("algebra",      ["groups", "topology"], 5),
+    "classical_mech":   ("physics",      ["derivatives"],      3),
+    "electromagnetism": ("physics",      ["vectors", "calculus_advanced"], 4),
+    "thermodynamics":   ("physics",      ["derivatives"],      3),
+    "quantum_mech":     ("physics",      ["complex_analysis"], 5),
+    "calculus_advanced":("calculus",     ["differential_eq"],  4),
+    "convex_opt":       ("optimization", ["calculus_advanced"],4),
+    "gradient_descent": ("optimization", ["derivatives"],      3),
+    "entropy":          ("information",  ["information_theory"],3),
+    "kolmogorov":       ("information",  ["algorithms"],       5),
+    "godel":            ("logic",        ["formal_logic"],     5),
+    "chaos_theory":     ("mathematics",  ["differential_eq"],  5),
+    "fractal_geometry": ("patterns",     ["geometry_euclid"],  4),
+    "neural_math":      ("neuroscience", ["statistics_basic"], 3),
+    "game_theory":      ("optimization", ["probability"],      3),
+}
+
+SCIENCE_SOURCES = [
+    # (label, Wikipedia page slug, target_module)
+    ("Euler's formula",     "Euler%27s_formula",          "mathematics"),
+    ("Fourier transform",   "Fourier_transform",          "calculus"),
+    ("Linear algebra",      "Linear_algebra",             "algebra"),
+    ("Prime numbers",       "Prime_number",               "mathematics"),
+    ("Riemann hypothesis",  "Riemann_hypothesis",         "mathematics"),
+    ("Calculus",            "Calculus",                   "calculus"),
+    ("Group theory",        "Group_theory",               "algebra"),
+    ("Entropy",             "Entropy_(information_theory)","information"),
+    ("Turing completeness", "Turing_completeness",        "computation"),
+    ("Quantum mechanics",   "Quantum_mechanics",          "physics"),
+    ("Topology",            "Topology",                   "geometry"),
+    ("Bayesian inference",  "Bayesian_inference",         "statistics"),
+    ("Kolmogorov complexity","Kolmogorov_complexity",     "information"),
+    ("Category theory",     "Category_theory",            "algebra"),
+    ("Mandelbrot set",      "Mandelbrot_set",             "patterns"),
+    ("Navier-Stokes",       "Navier–Stokes_equations",   "physics"),
+    ("Gödel theorems",      "Gödel%27s_incompleteness_theorems","logic"),
+    ("Neural network math", "Artificial_neural_network",  "neuroscience"),
+    ("P vs NP",             "P_versus_NP_problem",        "computation"),
+    ("Chaos theory",        "Chaos_theory",               "mathematics"),
+    ("Graph theory",        "Graph_theory",               "computation"),
+    ("Differential geometry","Differential_geometry",     "geometry"),
+    ("Stochastic process",  "Stochastic_process",         "statistics"),
+    ("Automata theory",     "Automata_theory",            "computation"),
+    ("Lambda calculus",     "Lambda_calculus",            "logic"),
+    ("Tensor calculus",     "Tensor",                     "calculus"),
+    ("Algebraic topology",  "Algebraic_topology",         "algebra"),
+    ("Information geometry","Information_geometry",       "information"),
+    ("Statistical mechanics","Statistical_mechanics",     "physics"),
+    ("Game theory",         "Game_theory",                "optimization"),
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §4  NEURONE & SYNAPSE
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Neuron:
+    __slots__ = [
+        "id","mod","exc","v","tL","sp","drive","imp",
+        "glow","vn","fc","rx","ry","rz","last_spike","hebb_trace"
+    ]
+    def __init__(self, nid, mod, exc, cx, cy, cz, r):
+        self.id    = nid
+        self.mod   = mod
+        self.exc   = exc
+        self.v     = VR + random.gauss(0, 6)
+        self.tL    = -9999.0
+        self.sp    = False
+        self.drive = 0.7 + random.random() * 2.4
+        self.imp   = 0.3 + random.random() * 0.7
+        self.glow  = 0.0
+        self.vn    = 0.0
+        self.fc    = 0
+        self.rx    = cx + random.gauss(0, r * 0.45)
+        self.ry    = cy + random.gauss(0, r * 0.30)
+        self.rz    = cz + random.gauss(0, r * 0.45)
+        self.last_spike  = -9999.0
+        self.hebb_trace  = 0.0
+
+class Synapse:
+    __slots__ = ["src","tgt","w","delay","hebb","stdp","elig"]
+    def __init__(self, src: Neuron, tgt: Neuron, w=None):
+        raw       = w if w else random.uniform(0.15, 0.65)
+        self.w    = raw if src.exc else -raw * 0.65
+        self.src  = src
+        self.tgt  = tgt
+        self.delay = random.uniform(1.0, 9.0)
+        self.hebb  = 0.0
+        self.stdp  = 0.0
+        self.elig  = 0.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §5  MODULE
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Module:
+    def __init__(self, name, n_init, color, cx, cy, cz, inh, domain):
+        self.name   = name
+        self.color  = color
+        self.cx, self.cy, self.cz = cx, cy, cz
+        self.inh    = inh
+        self.domain = domain
+        self.neurons: list[Neuron] = []
+        self.activation = 0.0   # moyenne sur le dernier frame
+        self.drift  = random.random() * math.pi * 2
+        self.mastery = 0.0       # [0, 1] maîtrise des concepts du domaine
+        self.trace  = [0] * 60
+        self.ptr    = 0
+        self.acc    = 0
+
+        r = 48 + n_init * 1.2
+        for _ in range(n_init):
+            self._new_neuron(r)
+
+    def _new_neuron(self, r=None):
+        if r is None:
+            r = 48 + len(self.neurons) * 1.2
+        exc = random.random() >= self.inh
+        n   = Neuron(
+            f"{self.name[:4]}_{len(self.neurons):04d}",
+            self.name, exc, self.cx, self.cy, self.cz, r
+        )
+        self.neurons.append(n)
+        return n
+
+    def add_neurons(self, count: int, pre_wired_callback=None) -> list[Neuron]:
+        """Ajoute count neurones, retourne la liste pour câblage."""
+        added = []
+        for _ in range(count):
+            n = self._new_neuron()
+            added.append(n)
+        if pre_wired_callback:
+            pre_wired_callback(added)
+        return added
+
+    def avg_activation(self):
+        if not self.neurons: return 0.0
+        return sum(n.glow for n in self.neurons) / len(self.neurons)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §6  KNOWLEDGE GRAPH
+# ─────────────────────────────────────────────────────────────────────────────
+
+class KnowledgeGraph:
+    """Graphe des concepts appris — nœuds = concepts, arêtes = co-activation."""
+
+    def __init__(self):
+        self.nodes: dict[str, dict] = {}   # concept → {module, mastery, times}
+        self.edges: dict[tuple, float] = {}  # (a,b) → weight
+
+        # Charger depuis disque
+        saved = _load_json(KG_FILE, {"nodes": {}, "edges": {}})
+        self.nodes = saved.get("nodes", {})
+        self.edges = {tuple(k.split("||")): v for k, v in saved.get("edges", {}).items()}
+
+    def add_concept(self, concept: str, module: str, complexity: float = 1.0):
+        if concept not in self.nodes:
+            self.nodes[concept] = {
+                "module": module, "mastery": 0.0, "times": 0,
+                "complexity": complexity, "first_seen": time.time()
+            }
+        self.nodes[concept]["times"] += 1
+
+    def reinforce(self, concept: str, delta: float = 0.05):
+        if concept in self.nodes:
+            self.nodes[concept]["mastery"] = min(1.0, self.nodes[concept]["mastery"] + delta)
+
+    def co_activate(self, a: str, b: str, strength: float = 0.01):
+        key = (min(a, b), max(a, b))
+        self.edges[key] = min(1.0, self.edges.get(key, 0.0) + strength)
+
+    def get_mastery(self, concept: str) -> float:
+        return self.nodes.get(concept, {}).get("mastery", 0.0)
+
+    def concepts_by_module(self, module: str) -> list[str]:
+        return [c for c, d in self.nodes.items() if d["module"] == module]
+
+    def save(self):
+        _save_json(KG_FILE, {
+            "nodes": self.nodes,
+            "edges": {"||".join(k): v for k, v in self.edges.items()}
+        })
+
+    def stats(self) -> dict:
+        return {
+            "concepts": len(self.nodes),
+            "connections": len(self.edges),
+            "avg_mastery": round(
+                sum(d["mastery"] for d in self.nodes.values()) / max(1, len(self.nodes)), 3
+            )
+        }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §7  AUTO-CURRICULUM ENGINE
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Curriculum:
+    """Pilote l'ordre d'apprentissage des topics mathématiques/scientifiques."""
+
+    def __init__(self, kg: KnowledgeGraph):
+        self.kg       = kg
+        self.queue    = collections.deque()
+        self.learned  = set(_load_json(TOPIC_FILE, []))
+        self.current  = None
+        self._build_initial_queue()
+
+    def _build_initial_queue(self):
+        """Ordonne les topics par graphe de prérequis (topological sort)."""
+        # BFS depuis les topics sans prérequis
+        visited = set()
+        def dfs(topic):
+            if topic in visited: return
+            visited.add(topic)
+            prereqs = MATH_CURRICULUM.get(topic, (None, [], 1))[1]
+            for p in prereqs:
+                dfs(p)
+            if topic not in self.learned:
+                self.queue.append(topic)
+        for t in MATH_CURRICULUM:
+            dfs(t)
+
+    def next_topic(self) -> str | None:
+        """Retourne le prochain topic à apprendre (ou None si tout maîtrisé)."""
+        while self.queue:
+            topic = self.queue[0]
+            if topic in self.learned:
+                self.queue.popleft()
+                continue
+            _, prereqs, _ = MATH_CURRICULUM[topic]
+            # Vérifier que les prérequis sont suffisamment maîtrisés
+            if all(self.kg.get_mastery(p) >= 0.55 for p in prereqs):
+                return topic
+            # Pas encore prêt — mettre en fin de queue
+            self.queue.rotate(-1)
+            break
+        # Retomber sur les sources scientifiques
+        return None
+
+    def mark_learned(self, topic: str, mastery_delta: float = 0.15):
+        self.kg.add_concept(topic, MATH_CURRICULUM[topic][0],
+                            MATH_CURRICULUM[topic][2])
+        self.kg.reinforce(topic, mastery_delta)
+        if self.kg.get_mastery(topic) >= 0.80:
+            self.learned.add(topic)
+            if self.queue and self.queue[0] == topic:
+                self.queue.popleft()
+        _save_json(TOPIC_FILE, list(self.learned))
+
+    def stats(self) -> dict:
+        return {
+            "topics_learned": len(self.learned),
+            "topics_total": len(MATH_CURRICULUM),
+            "queue_depth": len(self.queue),
+            "progress_pct": round(len(self.learned)/len(MATH_CURRICULUM)*100, 1)
+        }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §8  WEB CRAWLER (optionnel, non-bloquant)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class WikiCrawler:
+    """Crawle Wikipedia pour des stimuli d'apprentissage.
+    Complètement async et non-bloquant."""
+
+    EXTRACT_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
+
+    def __init__(self, enabled: bool = True):
+        self.enabled  = enabled
+        self.results  = collections.deque(maxlen=50)
+        self._idx     = 0
+        self._lock    = threading.Lock()
+        if enabled:
+            t = threading.Thread(target=self._loop, daemon=True)
+            t.start()
+
+    def _loop(self):
+        """Crawl lent pour ne pas surcharger Wikipedia (1 req / 30s)."""
+        while True:
+            time.sleep(30 + random.uniform(0, 20))
+            try:
+                import urllib.request
+                label, slug, module = SCIENCE_SOURCES[self._idx % len(SCIENCE_SOURCES)]
+                url = self.EXTRACT_URL.format(slug)
+                req = urllib.request.Request(url, headers={"User-Agent": "SoulLink-Brain-v9/1.0"})
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    data = json.loads(r.read().decode())
+                extract = data.get("extract", "")
+                if extract:
+                    with self._lock:
+                        self.results.append({
+                            "label": label, "module": module,
+                            "text": extract[:800], "ts": time.time()
+                        })
+                    print(f"📖  Crawled: {label} → {module}")
+                self._idx += 1
+            except Exception as e:
+                pass  # silencieux — non critique
+
+    def pop_result(self) -> dict | None:
+        with self._lock:
+            return self.results.popleft() if self.results else None
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §9  CERVEAU COMPLET v9
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Brain9:
+    def __init__(self, web_enabled: bool = True):
+        print("🧠  SoulLink Brain v9.0 — initialisation...")
+
+        # ── Modules
+        self.modules: dict[str, Module] = {}
+        for (name, n, color, cx, cy, cz, inh, domain) in MODULE_DEFS:
+            self.modules[name] = Module(name, n, color, cx, cy, cz, inh, domain)
+
+        # ── Stats live (initialisé AVANT _wire)
+        self.stats = {
+            "N": 0, "syn": 0,
+            "spk": 0, "sig": 0, "hz": 0.0,
+            "growth": 0, "hebb": 0, "stdp": 0,
+            "topics_learned": 0,
+            "kg_concepts": 0, "resonance_events": 0,
+            "avalanche_mode": False,
+        }
+
+        # ── Simulation state (initialisé AVANT to_json peut être appelé)
+        self.sim_t  = 0.0
+        self.pending: list[tuple] = []   # (deliver_at, tgt, w)
+        self.signals: list[dict] = []    # signaux animés inter-modules
+
+        # ── Neurones & synapses
+        self.neurons: list[Neuron] = []
+        self.synapses: list[Synapse] = []
+        self.adj: dict[str, list[tuple]] = {}   # nid → [(tgt, w, delay, syn)]
+        self._build_neurons()
+        self._wire()
+
+        # ── Persistance
+        self._state  = _load_json(STATE_FILE, {
+            "total_neurons": 0, "growth": 0, "total_spikes": 0,
+            "last_save": 0, "resonance_events": 0
+        })
+        self._total_neurons  = max(self._state.get("total_neurons", 0), len(self.neurons))
+        self._growth         = self._state.get("growth", 0)
+        self._total_spikes   = self._state.get("total_spikes", 0)
+        self._resonance_events = self._state.get("resonance_events", 0)
+        self._last_save      = 0.0
+
+        # ── Knowledge Graph & Curriculum
+        self.kg         = KnowledgeGraph()
+        self.curriculum = Curriculum(self.kg)
+
+        # ── Web Crawler
+        self.crawler = WikiCrawler(enabled=web_enabled)
+
+        # ── Stats live
+        self.stats = {
+            "N": len(self.neurons), "syn": len(self.synapses),
+            "spk": 0, "sig": 0, "hz": 0.0,
+            "growth": self._growth, "hebb": 0, "stdp": 0,
+            "topics_learned": len(self.curriculum.learned),
+            "kg_concepts": 0, "resonance_events": self._resonance_events,
+            "avalanche_mode": False,
+        }
+
+        # ── Lock + threads
+        self._lock = threading.Lock()
+        self._last_grow = time.time()
+        self._last_learn = time.time()
+        self._last_kg_save = time.time()
+        self._last_meta_check = time.time()
+        self._avalanche_cd = 0.0  # cooldown avalanche
+
+        threading.Thread(target=self._sim_loop,   daemon=True).start()
+        threading.Thread(target=self._learn_loop, daemon=True).start()
+        threading.Thread(target=self._grow_loop,  daemon=True).start()
+        threading.Thread(target=self._meta_loop,  daemon=True).start()
+        threading.Thread(target=self._save_loop,  daemon=True).start()
+
+        print(f"✅  Brain v9 prêt — {len(self.neurons)}N · {len(self.synapses)} syn · 24 modules")
+
+    # ── Construction ─────────────────────────────────────────────────────────
+
+    def _build_neurons(self):
+        for mod in self.modules.values():
+            for n in mod.neurons:
+                self.neurons.append(n)
+                self.adj[n.id] = []
+
+    def _add_syn(self, s: Neuron, t: Neuron, w=None):
+        syn = Synapse(s, t, w)
+        self.synapses.append(syn)
+        self.adj[s.id].append((t, syn.w, syn.delay, syn))
+
+    def _wire(self):
+        """Câblage initial selon WIRES_V9."""
+        def rand_n(mod_name): return random.choice(self.modules[mod_name].neurons)
+
+        for src_name, targets in WIRES_V9.items():
+            src_mod = self.modules[src_name]
+            for tgt_name in targets:
+                n_syns = 5 + random.randint(0, 8)
+                for _ in range(n_syns):
+                    self._add_syn(rand_n(src_name), rand_n(tgt_name))
+
+        # Intra-module
+        for mod in self.modules.values():
+            for _ in range(len(mod.neurons) * 3):
+                if len(mod.neurons) >= 2:
+                    s, t = random.sample(mod.neurons, 2)
+                    self._add_syn(s, t, random.uniform(0.3, 0.8))
+
+        self.stats["syn"] = len(self.synapses)
+
+    # ── Boucle de simulation LIF ──────────────────────────────────────────────
+
+    def _sim_loop(self):
+        """Simulation LIF + signaux animés — 200 Hz."""
+        trace_tick = 100.0
+        while True:
+            with self._lock:
+                self.sim_t += DT
+                spk = 0
+
+                # Délivrer les PSP en attente
+                still = []
+                for (at, tgt, w) in self.pending:
+                    if self.sim_t >= at:
+                        tgt.v += w * 6.0
+                    else:
+                        still.append((at, tgt, w))
+                self.pending = still
+
+                # Dynamique neuronale
+                new_sigs = []
+                for mod in self.modules.values():
+                    ms = 0
+                    for n in mod.neurons:
+                        n.sp = False
+                        if (self.sim_t - n.tL) < T_REFRAC:
+                            n.v = VZ
+                            n.glow *= 0.82
+                            continue
+                        n.v += (-(n.v - VR) / TAU_M + n.drive) * DT
+                        n.v += random.gauss(0, 0.35)
+                        n.vn = max(0.0, min(1.0, (n.v - VR) / (VT - VR)))
+                        if n.v >= VT:
+                            n.sp = True
+                            n.tL = self.sim_t
+                            n.last_spike = self.sim_t
+                            n.v = VZ
+                            n.glow = 1.0
+                            n.fc += 1
+                            spk += 1
+                            ms += 1
+                            for (tgt, w, delay, syn) in self.adj.get(n.id, []):
+                                if len(self.pending) < 3000:
+                                    self.pending.append((self.sim_t + delay, tgt, w))
+                                    syn.elig = 0.9 * syn.elig + 0.1
+                            # Signaux animés (limités pour perf)
+                            conns = self.adj.get(n.id, [])
+                            if conns and len(new_sigs) < 80:
+                                tgt2 = random.choice(conns)[0]
+                                if tgt2.mod != n.mod:
+                                    new_sigs.append({
+                                        "fm": n.mod, "tm": tgt2.mod,
+                                        "p": 0.0, "c": self.modules[n.mod].color
+                                    })
+                        else:
+                            n.glow = max(0.0, n.glow * 0.91)
+                    mod.acc += ms
+
+                # Trace oscilloscope
+                if self.sim_t >= trace_tick:
+                    for mod in self.modules.values():
+                        mod.trace[mod.ptr % 60] = mod.acc
+                        mod.ptr += 1
+                        mod.acc = 0
+                    trace_tick = self.sim_t + 100.0
+
+                # Signaux animés
+                for s in self.signals: s["p"] += 0.04
+                self.signals = [s for s in self.signals if s["p"] < 1.0]
+                self.signals.extend(new_sigs[:30])
+
+                total_n = len(self.neurons)
+                self.stats.update({
+                    "spk": spk, "sig": len(self.pending),
+                    "hz":  round(spk / max(total_n * DT / 1000.0, 1e-9), 1)
+                })
+                self._total_spikes += spk
+
+            time.sleep(0.005)
+
+    # ── Apprentissage Hebbian + STDP ──────────────────────────────────────────
+
+    def _learn_loop(self):
+        """Plastique synaptique 100ms + stimulus d'apprentissage."""
+        while True:
+            time.sleep(0.1)
+            now = time.time()
+            hebb_n = stdp_n = 0
+
+            with self._lock:
+                for syn in self.synapses:
+                    # Hebbian
+                    pre  = 1.0 if syn.src.sp else 0.0
+                    post = 1.0 if syn.tgt.sp else 0.0
+                    if pre and post:
+                        syn.hebb = 0.9 * syn.hebb + 0.1 * pre * post
+                        delta_h  = HEBBIAN_LR * syn.hebb * (1.0 - abs(syn.w))
+                        syn.w   += delta_h * (1 if syn.w >= 0 else -1)
+                        hebb_n  += 1
+
+                    # STDP
+                    dt_spike = self.sim_t - syn.src.last_spike
+                    if 0 < dt_spike < STDP_WIN:
+                        ltp = STDP_LR * math.exp(-dt_spike / STDP_WIN)
+                        syn.stdp = 0.8 * syn.stdp + ltp
+                        syn.w   += syn.stdp * 0.5 * (1 if syn.w >= 0 else -1)
+                        stdp_n  += 1
+                    elif -STDP_WIN < dt_spike < 0:
+                        ltd = -STDP_LR * math.exp(dt_spike / STDP_WIN)
+                        syn.stdp = 0.8 * syn.stdp + ltd
+                        syn.w   += syn.stdp * 0.3 * (1 if syn.w >= 0 else -1)
+
+                    # Clamp + decay
+                    syn.w *= (1.0 - W_DECAY)
+                    sign   = 1 if syn.w >= 0 else -1
+                    syn.w  = sign * max(W_MIN, min(W_MAX, abs(syn.w)))
+
+                self.stats["hebb"] += hebb_n
+                self.stats["stdp"] += stdp_n
+
+            # ── Stimulus d'apprentissage (curriculum + web)
+            if now - self._last_learn > 8.0:
+                self._last_learn = now
+                self._run_learning_cycle()
+
+    def _run_learning_cycle(self):
+        """Applique un cycle d'apprentissage : curriculum + web crawler."""
+        # 1. Curriculum mathématique
+        topic = self.curriculum.next_topic()
+        if topic:
+            module_name, _, complexity = MATH_CURRICULUM[topic]
+            mod = self.modules.get(module_name)
+            if mod:
+                n_new = int(complexity * 6) + random.randint(2, 8)
+                self._grow_module(mod, n_new, f"curriculum:{topic}")
+                self.curriculum.mark_learned(topic, mastery_delta=0.10 + complexity * 0.03)
+                self.stats["topics_learned"] = len(self.curriculum.learned)
+                # Co-activation inter-concept si deux topics proches
+                prev = getattr(self, "_last_topic", None)
+                if prev:
+                    self.kg.co_activate(prev, topic, 0.03)
+                self._last_topic = topic
+                print(f"📐  Learn: {topic} ({module_name}) +{n_new}N | "
+                      f"mastery={self.kg.get_mastery(topic):.2f}")
+
+        # 2. Web crawler
+        result = self.crawler.pop_result()
+        if result:
+            mod = self.modules.get(result["module"])
+            if mod:
+                n_new = LEARNING_GROW_BOOST + random.randint(0, 8)
+                self._grow_module(mod, n_new, f"web:{result['label']}")
+                # Renforcement Knowledge Graph
+                label = result["label"].lower().replace(" ", "_")
+                self.kg.add_concept(label, result["module"], 2.0)
+                self.kg.reinforce(label, 0.06)
+
+        # 3. Vérifier résonance
+        self._check_resonance()
+        self.stats["kg_concepts"] = len(self.kg.nodes)
+
+    def _check_resonance(self):
+        """Si math + physics ou math + computation co-actifs → burst."""
+        resonance_pairs = [
+            ("mathematics", "physics"),
+            ("mathematics", "computation"),
+            ("calculus", "physics"),
+            ("algebra", "computation"),
+            ("statistics", "information"),
+            ("logic", "computation"),
+            ("geometry", "physics"),
+        ]
+        for a, b in resonance_pairs:
+            mod_a, mod_b = self.modules.get(a), self.modules.get(b)
+            if not mod_a or not mod_b: continue
+            act_a = mod_a.avg_activation()
+            act_b = mod_b.avg_activation()
+            if act_a > 0.25 and act_b > 0.25:
+                self._resonance_burst(a, b)
+                break
+
+    def _resonance_burst(self, mod_a_name: str, mod_b_name: str):
+        """Neurogenèse massive lors d'une résonance inter-domaines."""
+        if time.time() - getattr(self, "_last_resonance", 0) < 60:
+            return  # cooldown 60s
+        self._last_resonance = time.time()
+        self._resonance_events += 1
+        self.stats["resonance_events"] = self._resonance_events
+
+        n_each = RESONANCE_BOOST // 2
+        self._grow_module(self.modules[mod_a_name], n_each, f"resonance:{mod_a_name}")
+        self._grow_module(self.modules[mod_b_name], n_each, f"resonance:{mod_b_name}")
+        print(f"⚡  RESONANCE {mod_a_name}↔{mod_b_name} +{RESONANCE_BOOST}N")
+
+    # ── Neurogenèse ───────────────────────────────────────────────────────────
+
+    def _grow_loop(self):
+        """Croissance de fond toutes les 5s + avalanche si activation élevée."""
+        while True:
+            time.sleep(BASE_GROW_INTERVAL)
+            with self._lock:
+                # Croissance de base (module le plus actif)
+                mods = sorted(self.modules.values(),
+                              key=lambda m: m.avg_activation(), reverse=True)
+                top  = mods[0] if mods else None
+                if top:
+                    self._grow_module(top, 2, "idle")
+
+                # Vérifier avalanche
+                if time.time() > self._avalanche_cd:
+                    for mod in mods:
+                        if mod.avg_activation() > AVALANCHE_THRESH:
+                            self._trigger_avalanche(mod)
+                            break
+
+    def _grow_module(self, mod: Module, count: int, reason: str = ""):
+        """Ajoute count neurones à un module et les câble."""
+        new_ns = mod.add_neurons(count)
+        for n in new_ns:
+            self.neurons.append(n)
+            self.adj[n.id] = []
+
+        # Câbler les nouveaux neurones
+        all_mods = list(self.modules.values())
+        for n in new_ns:
+            # Intra-module
+            if len(mod.neurons) >= 2:
+                partner = random.choice([m for m in mod.neurons if m is not n])
+                self._add_syn(n, partner)
+                self._add_syn(partner, n)
+            # Inter-module (connexion sortante)
+            targets = WIRES_V9.get(mod.name, [])
+            if targets:
+                tgt_mod = self.modules[random.choice(targets)]
+                if tgt_mod.neurons:
+                    self._add_syn(n, random.choice(tgt_mod.neurons))
+
+        self._growth += len(new_ns)
+        self._total_neurons = max(self._total_neurons, len(self.neurons))
+        self.stats.update({
+            "N": len(self.neurons), "syn": len(self.synapses),
+            "growth": self._growth
+        })
+
+    def _trigger_avalanche(self, hot_mod: Module):
+        """Vague de neurogenèse en cascade depuis un module suractivé."""
+        self._avalanche_cd = time.time() + 120  # cooldown 2 min
+        n_total = random.randint(100, 400)
+        self.stats["avalanche_mode"] = True
+        print(f"🌊  AVALANCHE depuis {hot_mod.name} +{n_total}N")
+
+        targets = [hot_mod.name] + list(WIRES_V9.get(hot_mod.name, []))[:4]
+        per_mod = max(4, n_total // len(targets))
+        for mod_name in targets:
+            mod = self.modules.get(mod_name)
+            if mod:
+                self._grow_module(mod, per_mod, "avalanche")
+
+        threading.Timer(10.0, lambda: self.stats.update({"avalanche_mode": False})).start()
+
+    # ── Métacognition (neuroscience surveille les autres) ─────────────────────
+
+    def _meta_loop(self):
+        """Le module neuroscience surveille et rééquilibre 30s."""
+        while True:
+            time.sleep(30)
+            with self._lock:
+                meta = self.modules.get("neuroscience")
+                if not meta: continue
+
+                # Trouver les modules sous-activés
+                activations = {
+                    name: mod.avg_activation()
+                    for name, mod in self.modules.items()
+                }
+                avg_act = sum(activations.values()) / max(1, len(activations))
+                weak = [name for name, act in activations.items()
+                        if act < avg_act * 0.4 and name != "neuroscience"]
+
+                for mod_name in weak[:2]:  # Max 2 par cycle
+                    mod = self.modules[mod_name]
+                    # Stimuler le module faible via boost de drive
+                    for n in random.sample(mod.neurons, min(5, len(mod.neurons))):
+                        n.drive = min(3.5, n.drive + 0.3)
+                    print(f"🔬  Meta: stimule {mod_name} (act={activations[mod_name]:.3f})")
+
+                # Élagage synaptique sélectif (nuit simulée = toutes les 5 min)
+                if int(time.time()) % 300 < 31:
+                    self._consolidate()
+
+    def _consolidate(self):
+        """Consolidation : renforce les synapses importantes, élague les faibles."""
+        pruned = 0
+        for syn in list(self.synapses):
+            if syn.elig < 0.05 and abs(syn.w) < W_MIN * 2:
+                # Élagage sélectif
+                try: self.synapses.remove(syn)
+                except ValueError: pass
+                try: self.adj[syn.src.id].remove((syn.tgt, syn.w, syn.delay, syn))
+                except (ValueError, KeyError): pass
+                pruned += 1
+            elif syn.elig > 0.5:
+                syn.w = min(W_MAX, abs(syn.w) * 1.05) * (1 if syn.w >= 0 else -1)
+        if pruned:
+            self.stats["syn"] = len(self.synapses)
+            print(f"💤  Consolidation: -{pruned} synapses élagage, "
+                  f"{self.stats['syn']} restantes")
+
+    # ── Sauvegarde ────────────────────────────────────────────────────────────
+
+    def _save_loop(self):
+        while True:
+            time.sleep(30)
+            self._do_save()
+
+    def _do_save(self):
+        _save_json(STATE_FILE, {
+            "total_neurons": self._total_neurons,
+            "growth": self._growth,
+            "total_spikes": self._total_spikes,
+            "resonance_events": self._resonance_events,
+            "last_save": time.time(),
+            "modules": {
+                name: {"neurons": len(mod.neurons), "mastery": mod.mastery}
+                for name, mod in self.modules.items()
+            }
+        })
+        self.kg.save()
+
+    # ── API export ────────────────────────────────────────────────────────────
+
+    def to_json(self) -> dict:
+        with self._lock:
+            neurons_out = [{
+                "id": n.id, "mod": n.mod, "exc": n.exc,
+                "v":  round(n.v,  2),
+                "gl": round(n.glow, 3),
+                "vn": round(n.vn,  3),
+                "fc": n.fc,
+                "rx": round(n.rx, 1), "ry": round(n.ry, 1), "rz": round(n.rz, 1),
+                "sp": n.sp, "dr": round(n.drive, 2), "imp": round(n.imp, 2),
+            } for n in self.neurons]
+
+            sigs_out = [{
+                "fm": s["fm"], "tm": s["tm"],
+                "p":  round(s["p"], 2), "c": s["c"]
+            } for s in self.signals[:120]]
+
+            mods_out = {}
+            for name, m in self.modules.items():
+                ptr = m.ptr % 60
+                mods_out[name] = {
+                    "name": name, "color": m.color,
+                    "pos": [m.cx, m.cy, m.cz],
+                    "n": len(m.neurons),
+                    "domain": m.domain,
+                    "drift": m.drift,
+                    "trace": m.trace[ptr:] + m.trace[:ptr],
+                    "activation": round(m.avg_activation(), 3),
+                }
+
+            stats = dict(self.stats)
+            stats["total_neurons"] = self._total_neurons
+            stats["total_spikes"]  = self._total_spikes
+            stats["resonance_events"] = self._resonance_events
+            stats["kg"] = self.kg.stats()
+            stats["curriculum"] = self.curriculum.stats()
+
+            return {
+                "neurons": neurons_out, "signals": sigs_out,
+                "modules": mods_out, "wires": WIRES_V9,
+                "stats": stats, "sim_t": round(self.sim_t, 1),
+                "wall": datetime.now().strftime("%H:%M:%S"),
+            }
+
+    def learn_topic_api(self, topic: str) -> dict:
+        """API externe pour injecter un topic."""
+        if topic in MATH_CURRICULUM:
+            with self._lock:
+                module_name, _, complexity = MATH_CURRICULUM[topic]
+                mod = self.modules.get(module_name)
+                if mod:
+                    n_new = int(complexity * 8) + 4
+                    self._grow_module(mod, n_new, f"api:{topic}")
+                self.curriculum.mark_learned(topic, mastery_delta=0.20)
+                self.stats["topics_learned"] = len(self.curriculum.learned)
+            return {"ok": True, "topic": topic, "module": module_name, "new_neurons": n_new}
+        # Topic libre (pas dans le curriculum)
+        parts = topic.lower().split()
+        best_mod = "mathematics"
+        for word in parts:
+            for mod_name in self.modules:
+                if word in mod_name:
+                    best_mod = mod_name
+                    break
+        with self._lock:
+            mod = self.modules[best_mod]
+            n_new = random.randint(6, 16)
+            self._grow_module(mod, n_new, f"api:{topic}")
+            self.kg.add_concept(topic.replace(" ", "_"), best_mod, 2.0)
+            self.kg.reinforce(topic.replace(" ", "_"), 0.08)
+        return {"ok": True, "topic": topic, "module": best_mod, "new_neurons": n_new}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §10  FLASK APP + HTML 3D
+# ─────────────────────────────────────────────────────────────────────────────
+
+app = Flask(__name__)
+
+HTML_V9 = r'''<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧠 SoulLink Brain v9 — Mathematical Singularity</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#040408}
+#w{position:fixed;inset:0}
+#c{display:block;width:100%;height:100%;cursor:grab}
+#c.drg{cursor:grabbing}
+.pn{position:absolute;background:rgba(4,4,18,.93);border:1px solid rgba(100,200,255,.18);
+    border-radius:10px;padding:10px 15px;font:11px/1.9 'JetBrains Mono',monospace;
+    color:#88ccff;pointer-events:none;backdrop-filter:blur(8px)}
+.pv{color:#fff;font-weight:700}.pd{opacity:.5}
+#hud{top:12px;left:12px;min-width:260px}
+#kg-panel{bottom:12px;left:12px;max-width:260px}
+#legend{top:12px;right:12px;display:flex;flex-wrap:wrap;gap:4px;
+        max-width:300px;padding:7px 9px;border-radius:10px;
+        background:rgba(4,4,18,.93);border:1px solid rgba(100,200,255,.12)}
+.lb{padding:2px 8px;border-radius:4px;font:9px/1.5 'JetBrains Mono',monospace;
+    font-weight:700;pointer-events:all;cursor:pointer;transition:.15s}
+.lb:hover{filter:brightness(1.3)}
+#nfo{top:12px;right:330px;width:200px;display:none}
+#loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        color:#88ccff;font:13px 'JetBrains Mono',monospace;text-align:center}
+#avalanche{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+           color:#ff5577;font:18px 'JetBrains Mono',monospace;
+           text-align:center;display:none;text-shadow:0 0 20px #ff5577;
+           animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+#learn-form{position:absolute;bottom:12px;right:12px;display:flex;gap:6px}
+#learn-input{background:rgba(4,4,18,.95);border:1px solid rgba(100,200,255,.3);
+             color:#fff;padding:7px 12px;border-radius:6px;
+             font:11px 'JetBrains Mono',monospace;width:200px}
+#learn-btn{background:rgba(61,159,255,.2);border:1px solid rgba(61,159,255,.4);
+           color:#3d9eff;padding:7px 14px;border-radius:6px;cursor:pointer;
+           font:11px 'JetBrains Mono',monospace}
+#learn-btn:hover{background:rgba(61,159,255,.35)}
+</style>
+</head><body>
+<div id="w">
+<canvas id="c"></canvas>
+
+<div class="pn" id="hud">
+  🧠 <span class="pv" id="hN">0</span>N <span class="pd">(Σ<span class="pv" id="hTot">0</span>)</span>
+     <span class="pd">|</span> ⚡<span class="pv" id="hSpk">0</span>
+     <span class="pd">|</span> 📡<span class="pv" id="hSig">0</span><br>
+  🔗 <span class="pv" id="hSyn">0</span>
+     <span class="pd">|</span> 📈<span class="pv" id="hHz">0</span>Hz
+     <span class="pd">|</span> 🌱<span class="pv" id="hGr">0</span>
+     <span class="pd">|</span> ⚛️<span class="pv" id="hRes">0</span>res<br>
+  📐 <span class="pv" id="hTop">0</span>/<span id="hTopT">0</span> topics
+     <span class="pd">|</span> 🕸️<span class="pv" id="hKg">0</span> concepts<br>
+  <span id="heb-line">🔥 Hebb <span class="pv" id="hHebb">0</span>
+     <span class="pd">|</span> ⚡STDP <span class="pv" id="hStdp">0</span></span>
+</div>
+
+<div class="pn" id="kg-panel">
+  <div style="color:#88ccff;font-weight:700;margin-bottom:6px">Knowledge Graph</div>
+  <div id="kg-topics" style="font-size:10px;line-height:1.7;max-height:160px;overflow:hidden"></div>
+</div>
+
+<div id="legend"></div>
+
+<div class="pn" id="nfo">
+  <div id="nfo-title" style="font-weight:700;font-size:13px;margin-bottom:6px"></div>
+  <div id="nfo-body" style="font-size:10.5px;line-height:1.7"></div>
+</div>
+
+<div id="avalanche">⚡ NEURONAL AVALANCHE ⚡<br>
+  <span style="font-size:13px">Cascade en cours...</span></div>
+
+<div id="loader">⏳ Chargement du Brain v9...</div>
+
+<div id="learn-form">
+  <input id="learn-input" type="text" placeholder="Topic (ex: fourier, gradient...)" />
+  <button id="learn-btn" onclick="learnTopic()">Apprendre ↗</button>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x040408);
+scene.fog = new THREE.FogExp2(0x040408, 0.00065);
+
+const camera = new THREE.PerspectiveCamera(52, innerWidth/innerHeight, 1, 6000);
+let theta=.4, phi=1.1, radius=750, tTheta=.4, tPhi=1.1, tRadius=750;
+
+scene.add(new THREE.AmbientLight(0x1a2255, 0.7));
+const sun = new THREE.PointLight(0x4488ff, 0.6, 2500);
+sun.position.set(0, 400, 300); scene.add(sun);
+const rim = new THREE.PointLight(0x3dffc0, 0.3, 2000);
+rim.position.set(-300, -100, -200); scene.add(rim);
+const rim2 = new THREE.PointLight(0xffaa44, 0.2, 2000);
+rim2.position.set(200, -200, 300); scene.add(rim2);
+
+// Stars
+(()=>{
+  const geo=new THREE.BufferGeometry(), pts=new Float32Array(4800);
+  for(let i=0;i<1600;i++){pts[i*3]=(Math.random()-.5)*4000;pts[i*3+1]=(Math.random()-.5)*4000;pts[i*3+2]=(Math.random()-.5)*4000;}
+  geo.setAttribute('position',new THREE.BufferAttribute(pts,3));
+  scene.add(new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:1.8,transparent:true,opacity:.45})));
+})();
+
+let brainData=null, initialized=false;
+const meshMap={}, modGroups={}, clickTargets=[], sigMeshes=[];
+let prevNCount=0;
+
+function h2n(h){return parseInt(h.replace('#',''),16);}
+const colCache={};
+function getCol(h){if(!colCache[h])colCache[h]=new THREE.Color(h2n(h));return colCache[h];}
+
+async function poll(){
+  try{
+    const r=await fetch('/api/brain');
+    brainData=await r.json();
+    if(!initialized && brainData.neurons.length>0){
+      initScene();
+      initSigPool();
+      document.getElementById('loader').style.display='none';
+      initialized=true;
+    }
+    if(initialized) updateScene();
+  }catch(e){}
+}
+setInterval(poll, 60);
+poll();
+
+function initSigPool(){
+  const geo=new THREE.SphereGeometry(3,8,6);
+  for(let i=0;i<400;i++){
+    const m=new THREE.Mesh(geo,new THREE.MeshPhongMaterial({
+      color:0xffffff,emissive:0x99ffcc,emissiveIntensity:1,
+      transparent:true,opacity:.85,depthWrite:false
+    }));
+    m.visible=false;
+    scene.add(m);
+    sigMeshes.push(m);
+  }
+}
+
+function initScene(){
+  // Modules (bulles 3D)
+  for(const[nm,conf] of Object.entries(brainData.modules)){
+    const [px,py,pz]=conf.pos, col=conf.color, hexC=h2n(col);
+    const n=conf.n, r=52+n*1.2, grp=new THREE.Group();
+    grp.position.set(px,py,pz);
+    grp.userData={baseY:py, drift:conf.drift};
+
+    const fill=new THREE.Mesh(
+      new THREE.SphereGeometry(r,32,24),
+      new THREE.MeshPhongMaterial({color:hexC,transparent:true,opacity:.07,
+        depthWrite:false,side:THREE.DoubleSide,shininess:150})
+    );
+    fill.userData={type:'module',name:nm};
+    grp.add(fill); clickTargets.push(fill);
+
+    grp.add(new THREE.Mesh(new THREE.SphereGeometry(r*.65,24,18),
+      new THREE.MeshPhongMaterial({color:hexC,transparent:true,opacity:.04,
+        depthWrite:false,side:THREE.BackSide})));
+
+    grp.add(new THREE.Mesh(new THREE.SphereGeometry(r,14,10),
+      new THREE.MeshPhongMaterial({color:hexC,transparent:true,opacity:.15,
+        wireframe:true,depthWrite:false})));
+
+    // Halo de domaine : math = anneau supplémentaire
+    if(conf.domain==='math'){
+      const ring=new THREE.Mesh(
+        new THREE.TorusGeometry(r*1.15,.5,8,64),
+        new THREE.MeshPhongMaterial({color:hexC,transparent:true,opacity:.35})
+      );
+      ring.rotation.x=Math.PI/2; grp.add(ring);
+    }
+    if(conf.domain==='meta'){
+      const ring2=new THREE.Mesh(
+        new THREE.TorusGeometry(r*1.25,.8,8,64),
+        new THREE.MeshPhongMaterial({color:0xff88ff,transparent:true,opacity:.4})
+      );
+      ring2.rotation.x=Math.PI/3; grp.add(ring2);
+    }
+
+    const light=new THREE.PointLight(hexC,.2,r*5);
+    grp.add(light);
+    scene.add(grp);
+    modGroups[nm]={grp,light,baseY:py,r,domain:conf.domain,neurons:[]};
+  }
+
+  // Connexions inter-modules
+  (()=>{
+    const pos=[], col_=[];
+    for(const[sn,tgts] of Object.entries(brainData.wires)){
+      const sp=brainData.modules[sn]?.pos, sc=getCol(brainData.modules[sn]?.color||'#444');
+      for(const tn of tgts){
+        const tp=brainData.modules[tn]?.pos;
+        if(!sp||!tp) continue;
+        pos.push(sp[0],sp[1],sp[2],tp[0],tp[1],tp[2]);
+        col_.push(sc.r,sc.g,sc.b,sc.r,sc.g,sc.b);
+      }
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+    geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(col_),3));
+    scene.add(new THREE.LineSegments(geo,
+      new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.18,depthWrite:false})));
+  })();
+
+  // Neurones
+  for(const n of brainData.neurons) createNeuronMesh(n);
+
+  // Légende
+  const leg=document.getElementById('legend');
+  leg.innerHTML=Object.entries(brainData.modules).map(([nm,conf])=>
+    `<div class="lb" style="background:${conf.color}22;border:1px solid ${conf.color}44;color:${conf.color}"
+         onclick="clickMod('${nm}')">${nm.slice(0,5).toUpperCase()}</div>`).join('');
+}
+
+function createNeuronMesh(n){
+  const mg=modGroups[n.mod];
+  if(!mg) return null;
+  const conf=brainData.modules[n.mod];
+  const col=conf.color, sz=2.2+(n.imp||0.5)*2.2;
+  const mesh=new THREE.Mesh(
+    new THREE.SphereGeometry(sz,7,5),
+    new THREE.MeshPhongMaterial({color:h2n(col),emissive:h2n(col),emissiveIntensity:.08,
+      shininess:90,transparent:true,opacity:.65})
+  );
+  mesh.position.set(n.rx,n.ry,n.rz);
+  mesh.userData={type:'neuron',nid:n.id,n};
+  mg.grp.add(mesh);
+  mg.neurons.push(mesh);
+  meshMap[n.id]=mesh;
+  clickTargets.push(mesh);
+  return mesh;
+}
+
+function updateScene(){
+  const st=brainData.stats;
+  document.getElementById('hN').textContent=st.N;
+  document.getElementById('hTot').textContent=st.total_neurons||st.N;
+  document.getElementById('hSpk').textContent=st.spk;
+  document.getElementById('hSig').textContent=st.sig;
+  document.getElementById('hSyn').textContent=st.syn;
+  document.getElementById('hHz').textContent=st.hz;
+  document.getElementById('hGr').textContent=st.growth;
+  document.getElementById('hRes').textContent=st.resonance_events||0;
+  document.getElementById('hTop').textContent=st.topics_learned||0;
+  document.getElementById('hTopT').textContent=st.curriculum?.topics_total||0;
+  document.getElementById('hKg').textContent=st.kg?.concepts||0;
+  document.getElementById('hHebb').textContent=st.hebb||0;
+  document.getElementById('hStdp').textContent=st.stdp||0;
+
+  // Avalanche indicator
+  document.getElementById('avalanche').style.display=st.avalanche_mode?'block':'none';
+
+  // Knowledge graph topics
+  if(st.kg && st.kg.concepts>0){
+    document.getElementById('kg-panel').style.display='block';
+    const topicsEl=document.getElementById('kg-topics');
+    topicsEl.textContent=`${st.curriculum?.topics_learned||0}/${st.curriculum?.topics_total||0} topics appris\n` +
+      `Progrès: ${st.curriculum?.progress_pct||0}%`;
+  }
+
+  // Nouveaux neurones
+  if(brainData.neurons.length > prevNCount){
+    for(const n of brainData.neurons) if(!meshMap[n.id]) createNeuronMesh(n);
+    prevNCount=brainData.neurons.length;
+  }
+
+  // Mettre à jour neurones
+  for(const n of brainData.neurons){
+    const m=meshMap[n.id];
+    if(!m) continue;
+    const conf=brainData.modules[n.mod];
+    if(!conf) continue;
+    if(n.sp){
+      m.material.color.set(0xffffff);
+      m.material.emissive.set(0xffffff);
+      m.material.emissiveIntensity=1.4;
+      m.scale.setScalar(3.2);
+    } else if(n.gl>0.05){
+      m.material.color.setStyle(conf.color);
+      m.material.emissive.setStyle(conf.color);
+      m.material.emissiveIntensity=n.gl*1.0;
+      m.scale.setScalar(1+n.gl*.7);
+    } else {
+      m.material.color.setStyle(conf.color);
+      m.material.emissive.setStyle(conf.color);
+      m.material.emissiveIntensity=.04+n.vn*.22;
+      m.scale.setScalar(1);
+    }
+    m.material.opacity=.5+n.vn*.5;
+  }
+
+  // Signaux animés
+  let si=0;
+  for(const sig of(brainData.signals||[])){
+    if(si>=sigMeshes.length) break;
+    const fm=brainData.modules[sig.fm], tm=brainData.modules[sig.tm];
+    if(!fm||!tm) continue;
+    const m=sigMeshes[si++], p=sig.p;
+    const fp=fm.pos, tp2=tm.pos;
+    m.position.set(fp[0]+(tp2[0]-fp[0])*p,fp[1]+(tp2[1]-fp[1])*p,fp[2]+(tp2[2]-fp[2])*p);
+    m.material.color.setStyle(sig.c);
+    m.material.emissive.setStyle(sig.c);
+    m.material.opacity=.85*(1-p*.6);
+    m.scale.setScalar(1.5+(1-p)*.5);
+    m.visible=true;
+  }
+  for(let i=si;i<sigMeshes.length;i++) sigMeshes[i].visible=false;
+
+  // Lumières modules
+  for(const[nm,mg] of Object.entries(modGroups)){
+    const mod=brainData.modules[nm];
+    if(!mod) continue;
+    const avg=brainData.neurons.filter(n=>n.mod===nm).reduce((s,n)=>s+n.gl,0)/mod.n;
+    mg.light.intensity=.15+avg*3.5;
+  }
+}
+
+// Caméra
+let drag=false, downX=0, downY=0, prevX=0, prevY=0;
+canvas.addEventListener('mousedown',e=>{drag=true;downX=prevX=e.clientX;downY=prevY=e.clientY;canvas.classList.add('drg')});
+window.addEventListener('mouseup',()=>{drag=false;canvas.classList.remove('drg')});
+window.addEventListener('mousemove',e=>{if(!drag)return;
+  tTheta-=(e.clientX-prevX)*.009;
+  tPhi=Math.max(.12,Math.min(Math.PI-.12,tPhi+(e.clientY-prevY)*.009));
+  prevX=e.clientX;prevY=e.clientY;});
+canvas.addEventListener('wheel',e=>{e.preventDefault();tRadius=Math.max(100,Math.min(2000,tRadius+e.deltaY*.7));},{passive:false});
+
+// Click
+const ray=new THREE.Raycaster(), mv=new THREE.Vector2();
+canvas.addEventListener('click',e=>{
+  if(Math.abs(e.clientX-downX)>8||Math.abs(e.clientY-downY)>8)return;
+  mv.x=(e.clientX/innerWidth)*2-1;
+  mv.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mv,camera);
+  const hits=ray.intersectObjects(clickTargets,false);
+  if(hits.length){
+    const ud=hits[0].object.userData;
+    if(ud.type==='module') clickMod(ud.name);
+    else if(ud.type==='neuron') showNeuron(ud.n);
+  } else document.getElementById('nfo').style.display='none';
+});
+
+function clickMod(nm){
+  if(!brainData) return;
+  const m=brainData.modules[nm];
+  const st=brainData.stats;
+  const ns=brainData.neurons.filter(n=>n.mod===nm);
+  const exc=ns.filter(n=>n.exc).length;
+  const avgGl=(ns.reduce((s,n)=>s+n.gl,0)/Math.max(ns.length,1)).toFixed(3);
+  document.getElementById('nfo-title').innerHTML=
+    `<span style="color:${m.color}">${nm.toUpperCase()}</span> <span style="font-size:9px;color:#88ccff">[${m.domain}]</span>`;
+  document.getElementById('nfo-body').innerHTML=
+    `Neurones: <b>${m.n}</b> (exc: ${exc})<br>Activation: <b>${m.activation||0}</b><br>Glow: <b>${avgGl}</b><br>Domain: <b>${m.domain}</b>`;
+  document.getElementById('nfo').style.display='block';
+}
+
+function showNeuron(n){
+  if(!brainData) return;
+  const m=brainData.modules[n.mod];
+  document.getElementById('nfo-title').innerHTML=
+    `<span style="color:${m.color}">${n.id}</span>`;
+  document.getElementById('nfo-body').innerHTML=
+    `Module: <b>${n.mod}</b> [${m.domain}]<br>Type: <b>${n.exc?'Exc':'Inh'}</b><br>V: <b>${(-70+n.vn*15).toFixed(1)}mV</b><br>Spikes: <b>${n.fc}</b><br>Drive: <b>${n.dr}</b>`;
+  document.getElementById('nfo').style.display='block';
+}
+
+async function learnTopic(){
+  const inp=document.getElementById('learn-input');
+  const topic=inp.value.trim();
+  if(!topic) return;
+  inp.value='';
+  try{
+    const r=await fetch('/api/learn',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic})});
+    const d=await r.json();
+    console.log('Learned:',d);
+  }catch(e){}
+}
+
+// Ajout touche Entrée pour apprendre
+document.getElementById('learn-input').addEventListener('keydown',e=>{if(e.key==='Enter')learnTopic();});
+
+function camUpdate(){
+  theta+=(tTheta-theta)*.09;
+  phi+=(tPhi-phi)*.09;
+  radius+=(tRadius-radius)*.09;
+  camera.position.set(
+    radius*Math.sin(phi)*Math.sin(theta),
+    radius*Math.cos(phi),
+    radius*Math.sin(phi)*Math.cos(theta)
+  );
+  camera.lookAt(0,0,0);
+}
+
+function animate(ts){
+  requestAnimationFrame(animate);
+  if(brainData){
+    for(const[nm,mg] of Object.entries(modGroups)){
+      const conf=brainData.modules[nm];
+      if(!conf) continue;
+      const dr=conf.drift, t=ts*.001;
+      mg.grp.position.y=mg.baseY+Math.sin(t*.4+dr)*10;
+      mg.grp.rotation.y=t*.032+dr;
+      mg.grp.rotation.x=Math.sin(t*.024+dr)*.06;
+      // Les modules math tournent un peu plus vite
+      if(mg.domain==='math') mg.grp.rotation.y=t*.055+dr;
+    }
+  }
+  camUpdate();
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body></html>'''
+
+
+@app.route("/")
+def index():
+    return Response(HTML_V9, mimetype="text/html")
+
+@app.route("/api/brain")
+def api_brain():
+    return Response(
+        json.dumps(BRAIN.to_json(), ensure_ascii=False),
+        mimetype="application/json"
+    )
+
+@app.route("/api/stats")
+def api_stats():
+    with BRAIN._lock:
+        return jsonify(BRAIN.stats)
+
+@app.route("/api/learn", methods=["POST"])
+def api_learn():
+    data = request.get_json() or {}
+    topic = data.get("topic", "").strip()
+    if not topic:
+        return jsonify({"ok": False, "error": "no topic"})
+    result = BRAIN.learn_topic_api(topic)
+    return jsonify(result)
+
+@app.route("/api/kg")
+def api_kg():
+    return jsonify({
+        "stats": BRAIN.kg.stats(),
+        "nodes": list(BRAIN.kg.nodes.items())[:50],
+        "curriculum": BRAIN.curriculum.stats(),
+    })
+
+@app.route("/api/avalanche", methods=["POST"])
+def api_avalanche():
+    """Déclenche manuellement une avalanche sur le module mathematics."""
+    with BRAIN._lock:
+        mod = BRAIN.modules.get("mathematics")
+        if mod:
+            BRAIN._trigger_avalanche(mod)
+    return jsonify({"ok": True, "msg": "Avalanche déclenchée sur mathematics"})
+
+@app.route("/api/resonance", methods=["POST"])
+def api_resonance():
+    """Déclenche manuellement une résonance mathematics ↔ physics."""
+    data = request.get_json() or {}
+    a = data.get("a", "mathematics")
+    b = data.get("b", "physics")
+    with BRAIN._lock:
+        BRAIN._resonance_burst(a, b)
+    return jsonify({"ok": True, "a": a, "b": b})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §11  MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+BRAIN: Brain9 | None = None
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="SoulLink Brain v9")
+    parser.add_argument("--port",    type=int, default=8084)
+    parser.add_argument("--no-web",  action="store_true", help="Désactiver le crawler web")
+    args = parser.parse_args()
+
+    BRAIN = Brain9(web_enabled=not args.no_web)
+
+    print()
+    print("═" * 58)
+    print("  🧠  SoulLink Brain v9.0 — Mathematical Singularity")
+    print("═" * 58)
+    print(f"  Modules    : {len(BRAIN.modules)} (24 total, dont 14 nouveaux)")
+    print(f"  Neurones   : {len(BRAIN.neurons)}")
+    print(f"  Synapses   : {len(BRAIN.synapses)}")
+    print(f"  Topics     : {len(BRAIN.curriculum.learned)}/{len(MATH_CURRICULUM)} appris")
+    print(f"  Web crawler: {'actif' if not args.no_web else 'désactivé'}")
+    print()
+    print(f"  🌐  http://localhost:{args.port}/")
+    print(f"  📊  http://localhost:{args.port}/api/brain")
+    print(f"  🕸️   http://localhost:{args.port}/api/kg")
+    print(f"  ⚡  POST /api/learn  {{\"topic\": \"fourier\"}}")
+    print(f"  🌊  POST /api/avalanche   (déclencher une vague)")
+    print(f"  ⚛️   POST /api/resonance  (résonance math↔physics)")
+    print("═" * 58)
+
+    app.run(host="0.0.0.0", port=args.port, threaded=True)

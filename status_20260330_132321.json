@@ -1,0 +1,98 @@
+{
+  "intensity": 0.7,
+  "mode": "maintain",
+  "modules": {
+    "attention": {
+      "activation": 0.262,
+      "color": "#ff4aff",
+      "importance": 0.733,
+      "neurons": 25,
+      "x": 600,
+      "y": 220
+    },
+    "audio": {
+      "activation": 0.286,
+      "color": "#4a4aff",
+      "importance": 0.572,
+      "neurons": 16,
+      "x": 550,
+      "y": 350
+    },
+    "language": {
+      "activation": 0.181,
+      "color": "#4affff",
+      "importance": 0.928,
+      "neurons": 33,
+      "x": 150,
+      "y": 350
+    },
+    "learning": {
+      "activation": 0.124,
+      "color": "#ffaa4a",
+      "importance": 0.848,
+      "neurons": 27,
+      "x": 200,
+      "y": 220
+    },
+    "memory": {
+      "activation": 0.106,
+      "color": "#4a9eff",
+      "importance": 0.456,
+      "neurons": 31,
+      "x": 350,
+      "y": 80
+    },
+    "motor": {
+      "activation": 0.231,
+      "color": "#ffff4a",
+      "importance": 0.608,
+      "neurons": 21,
+      "x": 400,
+      "y": 420
+    },
+    "output": {
+      "activation": 0.226,
+      "color": "#9bff4a",
+      "importance": 0.529,
+      "neurons": 21,
+      "x": 400,
+      "y": 220
+    },
+    "perception": {
+      "activation": 0.16,
+      "color": "#4affb8",
+      "importance": 0.381,
+      "neurons": 20,
+      "x": 150,
+      "y": 100
+    },
+    "reasoning": {
+      "activation": 0.074,
+      "color": "#ff4a6a",
+      "importance": 0.754,
+      "neurons": 38,
+      "x": 550,
+      "y": 100
+    },
+    "vision": {
+      "activation": 0.137,
+      "color": "#ff4a4a",
+      "importance": 0.753,
+      "neurons": 32,
+      "x": 350,
+      "y": 350
+    }
+  },
+  "period": "midday_rest",
+  "stats": {
+    "consolidation_events": 0,
+    "firing_neurons": 8,
+    "growth_events": 156,
+    "learning_cycles": 80,
+    "neuroscience_topics_learned": 2,
+    "spikes_count": 0,
+    "total_neurons": 264,
+    "total_synapses": 257
+  },
+  "timestamp": "2026-03-30T13:23:21.569775"
+}

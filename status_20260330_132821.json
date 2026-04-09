@@ -1,0 +1,98 @@
+{
+  "intensity": 0.7,
+  "mode": "maintain",
+  "modules": {
+    "attention": {
+      "activation": 0.056,
+      "color": "#ff4aff",
+      "importance": 1.0,
+      "neurons": 58,
+      "x": 600,
+      "y": 220
+    },
+    "audio": {
+      "activation": 0.051,
+      "color": "#4a4aff",
+      "importance": 0.782,
+      "neurons": 37,
+      "x": 550,
+      "y": 350
+    },
+    "language": {
+      "activation": 0.054,
+      "color": "#4affff",
+      "importance": 1.0,
+      "neurons": 74,
+      "x": 150,
+      "y": 350
+    },
+    "learning": {
+      "activation": 0.051,
+      "color": "#ffaa4a",
+      "importance": 1.0,
+      "neurons": 68,
+      "x": 200,
+      "y": 220
+    },
+    "memory": {
+      "activation": 0.035,
+      "color": "#4a9eff",
+      "importance": 0.716,
+      "neurons": 57,
+      "x": 350,
+      "y": 80
+    },
+    "motor": {
+      "activation": 0.05,
+      "color": "#ffff4a",
+      "importance": 0.908,
+      "neurons": 51,
+      "x": 400,
+      "y": 420
+    },
+    "output": {
+      "activation": 0.069,
+      "color": "#9bff4a",
+      "importance": 0.769,
+      "neurons": 45,
+      "x": 400,
+      "y": 220
+    },
+    "perception": {
+      "activation": 0.025,
+      "color": "#4affb8",
+      "importance": 0.461,
+      "neurons": 28,
+      "x": 150,
+      "y": 100
+    },
+    "reasoning": {
+      "activation": 0.028,
+      "color": "#ff4a6a",
+      "importance": 1.0,
+      "neurons": 79,
+      "x": 550,
+      "y": 100
+    },
+    "vision": {
+      "activation": 0.048,
+      "color": "#ff4a4a",
+      "importance": 1.0,
+      "neurons": 71,
+      "x": 350,
+      "y": 350
+    }
+  },
+  "period": "midday_rest",
+  "stats": {
+    "consolidation_events": 0,
+    "firing_neurons": 11,
+    "growth_events": 460,
+    "learning_cycles": 230,
+    "neuroscience_topics_learned": 2,
+    "spikes_count": 0,
+    "total_neurons": 568,
+    "total_synapses": 557
+  },
+  "timestamp": "2026-03-30T13:28:21.587508"
+}
